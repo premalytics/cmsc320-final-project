@@ -1,0 +1,9 @@
+name: "premalytics"
+output_dir: "docs"
+navbar:
+  title: "Premaltyics"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
