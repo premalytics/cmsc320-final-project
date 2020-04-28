@@ -1,5 +1,5 @@
 ---
-title: "Premalytics"
+title: "CMSC320 Final Project"
 ---
 
-Hello world
+place holder for final project

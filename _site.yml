@@ -1,9 +1,2 @@
-name: "premalytics"
+name: "cmsc320-final-project"
 output_dir: "docs"
-navbar:
-  title: "Premaltyics"
-  left:
-    - text: "Home"
-      href: index.html
-    - text: "About"
-      href: about.html

@@ -1,5 +1,0 @@
----
-title: "About"
----
-
-CMSC320 final project group for Jason Maa, Jason Hu, and Robert Yang
