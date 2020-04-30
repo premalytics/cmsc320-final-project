@@ -46,6 +46,7 @@ tags_df <- tags_df %>%
   ))
 tags_df
 ```
+
 However, this information is not very helpful by itself. We
 want to be able to use it in conjunction with the other data
 we have. One way to accomplish this is by joining data across
@@ -56,11 +57,33 @@ through `tag_id`. We can see that `tag_name` does indeed describe
 the genre of the books it's associated with.
 
 ```{r}
-books_df %>%
+book_genres_df <- books_df %>%
   inner_join(book_tags_df, by="goodreads_book_id") %>%
   inner_join(tags_df, by="tag_id") %>%
-  select("title", "tag_name") %>%
-  head(15)
+  select("book_id", "title", "tag_name")
+  
+head(book_genres_df, 15)
+```
+
+Now we can use `book_genres_df` to try to figure out Goodreads readership.
+Let's build another pipeline to join with `ratings_df` to link users
+with the genres of the books they rated. We can do more data manipulation
+from there to end up with a table of mean ratings in each genre of interest
+for each users.
+
+```{r}
+# This takes awhile to run...
+
+user_features_raw_df <- ratings_df %>%
+  inner_join(book_genres_df, by="book_id") %>%
+  spread(tag_name, rating) %>%
+  select(-book_id, -title,)
+
+user_features_df <- user_features_raw_df %>%
+  group_by(user_id) %>%
+  summarize_all(mean, na.rm=TRUE)
+
+head(user_features_df, 15)
 ```
 
 # Data Analysis
