@@ -4,3 +4,4 @@ navbar:
   left:
     - text: "Home"
       href: /
+exclude: "goodbooks-10k"
