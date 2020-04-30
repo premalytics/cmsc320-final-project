@@ -1,6 +1,12 @@
-# Final Project
+# CMSC320 final project
 
-CMSC320 final project
+Analysis of Goodreads readership
+
+## Getting Data
+After cloning project:
+
+    git submodule init
+    git submodule update
 
 ## Build
   - Install Rmarkdown: `install.packages("rmarkdown")`
