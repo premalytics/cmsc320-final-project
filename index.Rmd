@@ -10,12 +10,57 @@ library("tidyverse")
 
 # Loading and Pre-processing Data
 
-```{r}
-ratings_df <- read.csv("./goodbooks-10k/ratings.csv")
-head(ratings_df)
+Data can be easily loaded using R's `read.csv` method. For example, here we can load and display
+`books.csv` to get a broad picture of one of the datasets we will be working
+with. We can see that `books.csv` organizes its data in a tabulated manner with each book as a row
+and the attributes of a book as columns.
 
+```{r}
 books_df <- read.csv("./goodbooks-10k/books.csv")
 head(books_df)
+```
+
+Let's load the rest of our data as well.
+
+```{r}
+ratings_df <- read.csv("./goodbooks-10k/ratings.csv")
+tags_df <- read.csv("./goodbooks-10k/tags.csv")
+book_tags_df <- read.csv("./goodbooks-10k/book_tags.csv")
+```
+
+One of the things we are interested in is the genre of certain books.
+We can narrow down the genres we are interested in with pipeline that
+filters for certain genre names.
+
+```{r}
+tags_df <- tags_df %>%
+  filter(tag_name %in% c(
+    "fantasy",
+    "mystery",
+    "horror",
+    "realistic-fiction",
+    "romance",
+    "science-fiction",
+    "thriller",
+    "young-adult"
+  ))
+tags_df
+```
+However, this information is not very helpful by itself. We
+want to be able to use it in conjunction with the other data
+we have. One way to accomplish this is by joining data across
+different datasets through a common attribute. Here, we construct a pipeline
+to link data from `books_df` and `book_tags_df` through the shared
+attribute, `goodreads_book_id`, and then `book_tags_df` and `tags_df`
+through `tag_id`. We can see that `tag_name` does indeed describe
+the genre of the books it's associated with.
+
+```{r}
+books_df %>%
+  inner_join(book_tags_df, by="goodreads_book_id") %>%
+  inner_join(tags_df, by="tag_id") %>%
+  select("title", "tag_name") %>%
+  head(15)
 ```
 
 # Data Analysis

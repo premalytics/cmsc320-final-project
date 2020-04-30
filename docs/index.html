@@ -296,15 +296,7 @@ $(document).ready(function () {
 </div>
 <div id="loading-and-pre-processing-data" class="section level1">
 <h1>Loading and Pre-processing Data</h1>
-<pre class="r"><code>ratings_df &lt;- read.csv(&quot;./goodbooks-10k/ratings.csv&quot;)
-head(ratings_df)</code></pre>
-<pre><code>##   user_id book_id rating
-## 1       1     258      5
-## 2       2    4081      4
-## 3       2     260      5
-## 4       2    9296      5
-## 5       2    2318      3
-## 6       2      26      4</code></pre>
+<p>Data can be easily loaded using R’s <code>read.csv</code> method. For example, here we can load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and the attributes of a book as columns.</p>
 <pre class="r"><code>books_df &lt;- read.csv(&quot;./goodbooks-10k/books.csv&quot;)
 head(books_df)</code></pre>
 <pre><code>##   book_id goodreads_book_id best_book_id  work_id books_count      isbn
@@ -363,6 +355,54 @@ head(books_df)</code></pre>
 ## 4     https://images.gr-assets.com/books/1361975680s/2657.jpg
 ## 5     https://images.gr-assets.com/books/1490528560s/4671.jpg
 ## 6 https://images.gr-assets.com/books/1360206420s/11870085.jpg</code></pre>
+<p>Let’s load the rest of our data as well.</p>
+<pre class="r"><code>ratings_df &lt;- read.csv(&quot;./goodbooks-10k/ratings.csv&quot;)
+tags_df &lt;- read.csv(&quot;./goodbooks-10k/tags.csv&quot;)
+book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)</code></pre>
+<p>One of the things we are interested in is the genre of certain books. We can narrow down the genres we are interested in with pipeline that filters for certain genre names.</p>
+<pre class="r"><code>tags_df &lt;- tags_df %&gt;%
+  filter(tag_name %in% c(
+    &quot;fantasy&quot;,
+    &quot;mystery&quot;,
+    &quot;horror&quot;,
+    &quot;realistic-fiction&quot;,
+    &quot;romance&quot;,
+    &quot;science-fiction&quot;,
+    &quot;thriller&quot;,
+    &quot;young-adult&quot;
+  ))
+tags_df</code></pre>
+<pre><code>##   tag_id          tag_name
+## 1  11305           fantasy
+## 2  14821            horror
+## 3  20939           mystery
+## 4  25438 realistic-fiction
+## 5  26138           romance
+## 6  26837   science-fiction
+## 7  30358          thriller
+## 8  33114       young-adult</code></pre>
+<p>However, this information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by joining data across different datasets through a common attribute. Here, we construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>, and then <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>. We can see that <code>tag_name</code> does indeed describe the genre of the books it’s associated with.</p>
+<pre class="r"><code>books_df %&gt;%
+  inner_join(book_tags_df, by=&quot;goodreads_book_id&quot;) %&gt;%
+  inner_join(tags_df, by=&quot;tag_id&quot;) %&gt;%
+  select(&quot;title&quot;, &quot;tag_name&quot;) %&gt;%
+  head(15)</code></pre>
+<pre><code>##                                                       title          tag_name
+## 1                   The Hunger Games (The Hunger Games, #1)       young-adult
+## 2                   The Hunger Games (The Hunger Games, #1)           fantasy
+## 3                   The Hunger Games (The Hunger Games, #1)   science-fiction
+## 4                   The Hunger Games (The Hunger Games, #1)           romance
+## 5                   The Hunger Games (The Hunger Games, #1)          thriller
+## 6  Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)           fantasy
+## 7  Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)       young-adult
+## 8  Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)           mystery
+## 9                                   Twilight (Twilight, #1)       young-adult
+## 10                                  Twilight (Twilight, #1)           fantasy
+## 11                                  Twilight (Twilight, #1)            horror
+## 12                                  Twilight (Twilight, #1)   science-fiction
+## 13                                    To Kill a Mockingbird       young-adult
+## 14                                    To Kill a Mockingbird realistic-fiction
+## 15                                    To Kill a Mockingbird           mystery</code></pre>
 </div>
 <div id="data-analysis" class="section level1">
 <h1>Data Analysis</h1>
