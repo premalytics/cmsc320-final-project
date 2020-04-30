@@ -15,7 +15,7 @@
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<link href="site_libs/bootstrap-3.3.5/css/paper.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
@@ -102,33 +102,33 @@ summary {
 <style type="text/css">
 /* padding for bootstrap navbar */
 body {
-  padding-top: 51px;
+  padding-top: 64px;
   padding-bottom: 40px;
 }
 /* offset scroll position for anchor links (for fixed navbar)  */
 .section h1 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h2 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h3 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h4 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h5 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h6 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .dropdown-submenu {
   position: relative;
@@ -455,7 +455,7 @@ head(user_features_df, 15)</code></pre>
 </div>
 <div id="data-analysis-and-visualization" class="section level1">
 <h1>Data Analysis and Visualization</h1>
-<p>One way we can better understand our data is through visualization. For example, if we want to see where the readership lies on average ratings for horror and fantasy by plotting a 2D scatterplot. From the graph, it appears most users are clustered from 3 to 5, and there is not a strong overall preference for one genre versus the other.</p>
+<p>One way we can better understand our data is through visualization. For example, if we want to see where the readership lies on average ratings for young adult and fantasy by plotting a 2D scatterplot. From the graph, it appears most users are clustered from 3 to 5, and there is not a strong overall preference for one genre versus the other.</p>
 <pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
   geom_point() +
   labs(

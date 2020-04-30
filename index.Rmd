@@ -91,7 +91,7 @@ head(user_features_df, 15)
 
 One way we can better understand our data is through visualization.
 For example, if we want to see where the readership lies on average
-ratings for horror and fantasy by plotting a 2D scatterplot. From the
+ratings for young adult and fantasy by plotting a 2D scatterplot. From the
 graph, it appears most users are clustered from 3 to 5, and there is
 not a strong overall preference for one genre versus the other.
 
