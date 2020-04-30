@@ -5,3 +5,6 @@ navbar:
     - text: "Home"
       href: /
 exclude: "goodbooks-10k"
+output:
+  html_document:
+    theme: cosmo

@@ -3,6 +3,7 @@ title: "CMSC320 Final Project"
 ---
 
 ```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
 library("tidyverse")
 ```
 
@@ -86,9 +87,32 @@ user_features_df <- user_features_raw_df %>%
 head(user_features_df, 15)
 ```
 
-# Data Analysis
+# Data Analysis and Visualization
+
+One way we can better understand our data is through visualization.
+For example, if we want to see where the readership lies on average
+ratings for horror and fantasy by plotting a 2D scatterplot. From the
+graph, it appears most users are clustered from 3 to 5, and there is
+not a strong overall preference for one genre versus the other.
+
+```{r}
+ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
+  geom_point() +
+  labs(
+    title="User Average Ratings for Young Adult Versus Fantasy",
+    x="Fantasy Rating",
+    y="Young Adult Ratings"
+  )
+```
+```{r}
+# TODO: maybe also do ANOVA??
+```
 
 # Predictions
+
+```{r}
+# TODO: kmeans clustering
+```
 
 # Conclusion
 
