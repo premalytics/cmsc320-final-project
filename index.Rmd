@@ -3,6 +3,7 @@ title: "CMSC320 Final Project"
 ---
 
 ```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
 library("tidyverse")
 ```
 
@@ -10,17 +11,108 @@ library("tidyverse")
 
 # Loading and Pre-processing Data
 
-```{r}
-ratings_df <- read.csv("./goodbooks-10k/ratings.csv")
-head(ratings_df)
+Data can be easily loaded using R's `read.csv` method. For example, here we can load and display
+`books.csv` to get a broad picture of one of the datasets we will be working
+with. We can see that `books.csv` organizes its data in a tabulated manner with each book as a row
+and the attributes of a book as columns.
 
+```{r}
 books_df <- read.csv("./goodbooks-10k/books.csv")
 head(books_df)
 ```
 
-# Data Analysis
+Let's load the rest of our data as well.
+
+```{r}
+ratings_df <- read.csv("./goodbooks-10k/ratings.csv")
+tags_df <- read.csv("./goodbooks-10k/tags.csv")
+book_tags_df <- read.csv("./goodbooks-10k/book_tags.csv")
+```
+
+One of the things we are interested in is the genre of certain books.
+We can narrow down the genres we are interested in with pipeline that
+filters for certain genre names.
+
+```{r}
+tags_df <- tags_df %>%
+  filter(tag_name %in% c(
+    "fantasy",
+    "mystery",
+    "horror",
+    "realistic-fiction",
+    "romance",
+    "science-fiction",
+    "thriller",
+    "young-adult"
+  ))
+tags_df
+```
+
+However, this information is not very helpful by itself. We
+want to be able to use it in conjunction with the other data
+we have. One way to accomplish this is by joining data across
+different datasets through a common attribute. Here, we construct a pipeline
+to link data from `books_df` and `book_tags_df` through the shared
+attribute, `goodreads_book_id`, and then `book_tags_df` and `tags_df`
+through `tag_id`. We can see that `tag_name` does indeed describe
+the genre of the books it's associated with.
+
+```{r}
+book_genres_df <- books_df %>%
+  inner_join(book_tags_df, by="goodreads_book_id") %>%
+  inner_join(tags_df, by="tag_id") %>%
+  select("book_id", "title", "tag_name")
+  
+head(book_genres_df, 15)
+```
+
+Now we can use `book_genres_df` to try to figure out Goodreads readership.
+Let's build another pipeline to join with `ratings_df` to link users
+with the genres of the books they rated. We can do more data manipulation
+from there to end up with a table of mean ratings in each genre of interest
+for each users.
+
+```{r}
+# This takes awhile to run...
+
+user_features_raw_df <- ratings_df %>%
+  inner_join(book_genres_df, by="book_id") %>%
+  spread(tag_name, rating) %>%
+  select(-book_id, -title,)
+
+user_features_df <- user_features_raw_df %>%
+  group_by(user_id) %>%
+  summarize_all(mean, na.rm=TRUE)
+
+head(user_features_df, 15)
+```
+
+# Data Analysis and Visualization
+
+One way we can better understand our data is through visualization.
+For example, if we want to see where the readership lies on average
+ratings for young adult and fantasy by plotting a 2D scatterplot. From the
+graph, it appears most users are clustered from 3 to 5, and there is
+not a strong overall preference for one genre versus the other.
+
+```{r}
+ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
+  geom_point() +
+  labs(
+    title="User Average Ratings for Young Adult Versus Fantasy",
+    x="Fantasy Rating",
+    y="Young Adult Ratings"
+  )
+```
+```{r}
+# TODO: maybe also do ANOVA??
+```
 
 # Predictions
+
+```{r}
+# TODO: kmeans clustering
+```
 
 # Conclusion
 

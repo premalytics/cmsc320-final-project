@@ -15,7 +15,7 @@
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
+<link href="site_libs/bootstrap-3.3.5/css/paper.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
@@ -102,33 +102,33 @@ summary {
 <style type="text/css">
 /* padding for bootstrap navbar */
 body {
-  padding-top: 51px;
+  padding-top: 64px;
   padding-bottom: 40px;
 }
 /* offset scroll position for anchor links (for fixed navbar)  */
 .section h1 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h2 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h3 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h4 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h5 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .section h6 {
-  padding-top: 56px;
-  margin-top: -56px;
+  padding-top: 69px;
+  margin-top: -69px;
 }
 .dropdown-submenu {
   position: relative;
@@ -296,15 +296,7 @@ $(document).ready(function () {
 </div>
 <div id="loading-and-pre-processing-data" class="section level1">
 <h1>Loading and Pre-processing Data</h1>
-<pre class="r"><code>ratings_df &lt;- read.csv(&quot;./goodbooks-10k/ratings.csv&quot;)
-head(ratings_df)</code></pre>
-<pre><code>##   user_id book_id rating
-## 1       1     258      5
-## 2       2    4081      4
-## 3       2     260      5
-## 4       2    9296      5
-## 5       2    2318      3
-## 6       2      26      4</code></pre>
+<p>Data can be easily loaded using R’s <code>read.csv</code> method. For example, here we can load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and the attributes of a book as columns.</p>
 <pre class="r"><code>books_df &lt;- read.csv(&quot;./goodbooks-10k/books.csv&quot;)
 head(books_df)</code></pre>
 <pre><code>##   book_id goodreads_book_id best_book_id  work_id books_count      isbn
@@ -363,12 +355,121 @@ head(books_df)</code></pre>
 ## 4     https://images.gr-assets.com/books/1361975680s/2657.jpg
 ## 5     https://images.gr-assets.com/books/1490528560s/4671.jpg
 ## 6 https://images.gr-assets.com/books/1360206420s/11870085.jpg</code></pre>
+<p>Let’s load the rest of our data as well.</p>
+<pre class="r"><code>ratings_df &lt;- read.csv(&quot;./goodbooks-10k/ratings.csv&quot;)
+tags_df &lt;- read.csv(&quot;./goodbooks-10k/tags.csv&quot;)
+book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)</code></pre>
+<p>One of the things we are interested in is the genre of certain books. We can narrow down the genres we are interested in with pipeline that filters for certain genre names.</p>
+<pre class="r"><code>tags_df &lt;- tags_df %&gt;%
+  filter(tag_name %in% c(
+    &quot;fantasy&quot;,
+    &quot;mystery&quot;,
+    &quot;horror&quot;,
+    &quot;realistic-fiction&quot;,
+    &quot;romance&quot;,
+    &quot;science-fiction&quot;,
+    &quot;thriller&quot;,
+    &quot;young-adult&quot;
+  ))
+tags_df</code></pre>
+<pre><code>##   tag_id          tag_name
+## 1  11305           fantasy
+## 2  14821            horror
+## 3  20939           mystery
+## 4  25438 realistic-fiction
+## 5  26138           romance
+## 6  26837   science-fiction
+## 7  30358          thriller
+## 8  33114       young-adult</code></pre>
+<p>However, this information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by joining data across different datasets through a common attribute. Here, we construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>, and then <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>. We can see that <code>tag_name</code> does indeed describe the genre of the books it’s associated with.</p>
+<pre class="r"><code>book_genres_df &lt;- books_df %&gt;%
+  inner_join(book_tags_df, by=&quot;goodreads_book_id&quot;) %&gt;%
+  inner_join(tags_df, by=&quot;tag_id&quot;) %&gt;%
+  select(&quot;book_id&quot;, &quot;title&quot;, &quot;tag_name&quot;)
+  
+head(book_genres_df, 15)</code></pre>
+<pre><code>##    book_id                                                    title
+## 1        1                  The Hunger Games (The Hunger Games, #1)
+## 2        1                  The Hunger Games (The Hunger Games, #1)
+## 3        1                  The Hunger Games (The Hunger Games, #1)
+## 4        1                  The Hunger Games (The Hunger Games, #1)
+## 5        1                  The Hunger Games (The Hunger Games, #1)
+## 6        2 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)
+## 7        2 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)
+## 8        2 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)
+## 9        3                                  Twilight (Twilight, #1)
+## 10       3                                  Twilight (Twilight, #1)
+## 11       3                                  Twilight (Twilight, #1)
+## 12       3                                  Twilight (Twilight, #1)
+## 13       4                                    To Kill a Mockingbird
+## 14       4                                    To Kill a Mockingbird
+## 15       4                                    To Kill a Mockingbird
+##             tag_name
+## 1        young-adult
+## 2            fantasy
+## 3    science-fiction
+## 4            romance
+## 5           thriller
+## 6            fantasy
+## 7        young-adult
+## 8            mystery
+## 9        young-adult
+## 10           fantasy
+## 11            horror
+## 12   science-fiction
+## 13       young-adult
+## 14 realistic-fiction
+## 15           mystery</code></pre>
+<p>Now we can use <code>book_genres_df</code> to try to figure out Goodreads readership. Let’s build another pipeline to join with <code>ratings_df</code> to link users with the genres of the books they rated. We can do more data manipulation from there to end up with a table of mean ratings in each genre of interest for each users.</p>
+<pre class="r"><code># This takes awhile to run...
+
+user_features_raw_df &lt;- ratings_df %&gt;%
+  inner_join(book_genres_df, by=&quot;book_id&quot;) %&gt;%
+  spread(tag_name, rating) %&gt;%
+  select(-book_id, -title,)
+
+user_features_df &lt;- user_features_raw_df %&gt;%
+  group_by(user_id) %&gt;%
+  summarize_all(mean, na.rm=TRUE)
+
+head(user_features_df, 15)</code></pre>
+<pre><code>## # A tibble: 15 x 9
+##    user_id fantasy horror mystery `realistic-fict~ romance `science-fictio~
+##      &lt;int&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;
+##  1       1    3.55   3.29    3.4              3.51    3.45             3.14
+##  2       2    4.85   5       4.9              4.38    4.12             4.75
+##  3       3    1.45   1.5     1.24             2       1.76             1.17
+##  4       4    3.90   3.59    3.55             3.65    3.44             3.54
+##  5       5    4.11   4.03    4.03             3.95    3.93             4.11
+##  6       6    4.2    4.25    4.14             4.29    4.43             4.17
+##  7       7    3.79   3.78    3.76             4       3.51             3.76
+##  8       8    4.09   3.95    3.81             3.25    3.17             4.42
+##  9       9    3.66   3.67    3.25             3.37    3.52             3.58
+## 10      10    4.02   3.88    3.92             3.86    3.76             3.89
+## 11      11    3.63   3.69    3.42             3.59    3.44             3.4 
+## 12      12    3.54   3.38    3.85             3.86    3.56             3.81
+## 13      13    3.64   4       4.33             4.29    4.11             4   
+## 14      14    3.61   3.6     3.6              3.08    3.32             3.66
+## 15      15    4.26   4.45    4                4.35    4.31             4.33
+## # ... with 2 more variables: thriller &lt;dbl&gt;, `young-adult` &lt;dbl&gt;</code></pre>
 </div>
-<div id="data-analysis" class="section level1">
-<h1>Data Analysis</h1>
+<div id="data-analysis-and-visualization" class="section level1">
+<h1>Data Analysis and Visualization</h1>
+<p>One way we can better understand our data is through visualization. For example, if we want to see where the readership lies on average ratings for young adult and fantasy by plotting a 2D scatterplot. From the graph, it appears most users are clustered from 3 to 5, and there is not a strong overall preference for one genre versus the other.</p>
+<pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
+  geom_point() +
+  labs(
+    title=&quot;User Average Ratings for Young Adult Versus Fantasy&quot;,
+    x=&quot;Fantasy Rating&quot;,
+    y=&quot;Young Adult Ratings&quot;
+  )</code></pre>
+<pre><code>## Warning: Removed 105 rows containing missing values (geom_point).</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code># TODO: maybe also do ANOVA??</code></pre>
 </div>
 <div id="predictions" class="section level1">
 <h1>Predictions</h1>
+<pre class="r"><code># TODO: kmeans clustering</code></pre>
 </div>
 <div id="conclusion" class="section level1">
 <h1>Conclusion</h1>
