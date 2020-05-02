@@ -85,7 +85,8 @@ user_features_raw_df <- ratings_df %>%
 user_features_df <- user_features_raw_df %>%
   group_by(user_id) %>%
   summarize_all(mean, na.rm=TRUE) %>%
-  mutate_if(~ any(is.na(.x)),~ if_else(is.na(.x),0,.x)) # Replace na with 0 for now...
+  select(-user_id,) %>%
+  mutate_if(~ any(is.na(.x)),~ if_else(is.na(.x),-5,.x)) # Replace na with -5
 
 # Convert to snake case
 colnames(user_features_df) = to_snake_case(colnames(user_features_df))
@@ -111,21 +112,38 @@ ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
   )
 ```
 ```{r}
-# K-Menas
+# K-means
 # TODO: look at variance
 
-data <- user_features_df %>%
-  select(-user_id,)
+set.seed(320)
 
-kmeans_res <- kmeans(data, 10)
+kmeans_res <- kmeans(user_features_df, 5)
 kmeans_res$centers
 
-autoplot(kmeans_res, data=data)
+autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
+  labs(title="Readership Clusters")
+
+# Manually without autoplot
+#pca_res <- prcomp(data, center=TRUE, scale.=TRUE)
+
+#plot_data <- pca_res$x[,1:2] %>%
+#  as_tibble() %>%
+#  mutate(cluster=factor(kmeans_res$cluster))
+
+#ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+#  geom_point()
 ```
 
 # Predictions
 
 ```{r}
+# TODO: cluster prediction
+
+training_data <- user_features_df %>%
+  mutate(cluster=kmeans_res$cluster)
+
+head(training_data, 15)
+
 ```
 
 # Conclusion
