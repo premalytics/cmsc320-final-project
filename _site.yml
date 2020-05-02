@@ -2,7 +2,7 @@ name: "cmsc320-final-project"
 output_dir: "docs"
 navbar:
   left:
-    - text: "Home"
+    - text: "← Back to Home"
       href: /
 exclude: "goodbooks-10k"
 output:

@@ -11,7 +11,7 @@
 
 
 
-<title>CMSC320 Final Project</title>
+<title>Analyzing Goodreads’ Readership</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -272,7 +272,7 @@ $(document).ready(function () {
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
         <li>
-  <a href="/">Home</a>
+  <a href="/">← Back to Home</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -286,79 +286,40 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">CMSC320 Final Project</h1>
+<h1 class="title toc-ignore">Analyzing Goodreads’ Readership</h1>
 
 </div>
 
 
-<div id="introduction" class="section level1">
-<h1>Introduction</h1>
-</div>
-<div id="loading-and-pre-processing-data" class="section level1">
-<h1>Loading and Pre-processing Data</h1>
-<p>Data can be easily loaded using R’s <code>read.csv</code> method. For example, here we can load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and the attributes of a book as columns.</p>
-<pre class="r"><code>books_df &lt;- read.csv(&quot;./goodbooks-10k/books.csv&quot;)
+<p>Goodreads is a social cataloging site where users can search, track, and rate books. The site has over 20 million users, making it a large source of readership data. In this project, we demonstrate how one can leverage this data using the Goodbooks-10k dataset <span class="citation">(Zajac 2017)</span> to do analysis on Goodread’s readership by genre.</p>
+<div id="loading-and-pre-processing-data" class="section level2">
+<h2>Loading and Pre-processing Data</h2>
+<p>After being obtained, the data can be easily loaded using R’s <code>read.csv</code> method. For example, here we can load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and the attributes of a book as columns.</p>
+<pre class="r"><code>books_df &lt;- read.csv(&quot;./goodbooks-10k/books.csv&quot;) %&gt;%
+  as_tibble()
 head(books_df)</code></pre>
-<pre><code>##   book_id goodreads_book_id best_book_id  work_id books_count      isbn
-## 1       1           2767052      2767052  2792775         272 439023483
-## 2       2                 3            3  4640799         491 439554934
-## 3       3             41865        41865  3212258         226 316015849
-## 4       4              2657         2657  3275794         487  61120081
-## 5       5              4671         4671   245494        1356 743273567
-## 6       6          11870085     11870085 16827462         226 525478817
-##         isbn13                      authors original_publication_year
-## 1 9.780439e+12              Suzanne Collins                      2008
-## 2 9.780440e+12 J.K. Rowling, Mary GrandPrÃ©                      1997
-## 3 9.780316e+12              Stephenie Meyer                      2005
-## 4 9.780061e+12                   Harper Lee                      1960
-## 5 9.780743e+12          F. Scott Fitzgerald                      1925
-## 6 9.780525e+12                   John Green                      2012
-##                             original_title
-## 1                         The Hunger Games
-## 2 Harry Potter and the Philosopher&#39;s Stone
-## 3                                 Twilight
-## 4                    To Kill a Mockingbird
-## 5                         The Great Gatsby
-## 6                   The Fault in Our Stars
-##                                                      title language_code
-## 1                  The Hunger Games (The Hunger Games, #1)           eng
-## 2 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)           eng
-## 3                                  Twilight (Twilight, #1)         en-US
-## 4                                    To Kill a Mockingbird           eng
-## 5                                         The Great Gatsby           eng
-## 6                                   The Fault in Our Stars           eng
-##   average_rating ratings_count work_ratings_count work_text_reviews_count
-## 1           4.34       4780653            4942365                  155254
-## 2           4.44       4602479            4800065                   75867
-## 3           3.57       3866839            3916824                   95009
-## 4           4.25       3198671            3340896                   72586
-## 5           3.89       2683664            2773745                   51992
-## 6           4.26       2346404            2478609                  140739
-##   ratings_1 ratings_2 ratings_3 ratings_4 ratings_5
-## 1     66715    127936    560092   1481305   2706317
-## 2     75504    101676    455024   1156318   3011543
-## 3    456191    436802    793319    875073   1355439
-## 4     60427    117415    446835   1001952   1714267
-## 5     86236    197621    606158    936012    947718
-## 6     47994     92723    327550    698471   1311871
-##                                                     image_url
-## 1  https://images.gr-assets.com/books/1447303603m/2767052.jpg
-## 2        https://images.gr-assets.com/books/1474154022m/3.jpg
-## 3    https://images.gr-assets.com/books/1361039443m/41865.jpg
-## 4     https://images.gr-assets.com/books/1361975680m/2657.jpg
-## 5     https://images.gr-assets.com/books/1490528560m/4671.jpg
-## 6 https://images.gr-assets.com/books/1360206420m/11870085.jpg
-##                                               small_image_url
-## 1  https://images.gr-assets.com/books/1447303603s/2767052.jpg
-## 2        https://images.gr-assets.com/books/1474154022s/3.jpg
-## 3    https://images.gr-assets.com/books/1361039443s/41865.jpg
-## 4     https://images.gr-assets.com/books/1361975680s/2657.jpg
-## 5     https://images.gr-assets.com/books/1490528560s/4671.jpg
-## 6 https://images.gr-assets.com/books/1360206420s/11870085.jpg</code></pre>
+<pre><code>## # A tibble: 6 x 23
+##   book_id goodreads_book_~ best_book_id work_id books_count isbn   isbn13
+##     &lt;int&gt;            &lt;int&gt;        &lt;int&gt;   &lt;int&gt;       &lt;int&gt; &lt;fct&gt;   &lt;dbl&gt;
+## 1       1          2767052      2767052  2.79e6         272 4390~ 9.78e12
+## 2       2                3            3  4.64e6         491 4395~ 9.78e12
+## 3       3            41865        41865  3.21e6         226 3160~ 9.78e12
+## 4       4             2657         2657  3.28e6         487 6112~ 9.78e12
+## 5       5             4671         4671  2.45e5        1356 7432~ 9.78e12
+## 6       6         11870085     11870085  1.68e7         226 5254~ 9.78e12
+## # ... with 16 more variables: authors &lt;fct&gt;, original_publication_year &lt;dbl&gt;,
+## #   original_title &lt;fct&gt;, title &lt;fct&gt;, language_code &lt;fct&gt;,
+## #   average_rating &lt;dbl&gt;, ratings_count &lt;int&gt;, work_ratings_count &lt;int&gt;,
+## #   work_text_reviews_count &lt;int&gt;, ratings_1 &lt;int&gt;, ratings_2 &lt;int&gt;,
+## #   ratings_3 &lt;int&gt;, ratings_4 &lt;int&gt;, ratings_5 &lt;int&gt;, image_url &lt;fct&gt;,
+## #   small_image_url &lt;fct&gt;</code></pre>
 <p>Let’s load the rest of our data as well.</p>
-<pre class="r"><code>ratings_df &lt;- read.csv(&quot;./goodbooks-10k/ratings.csv&quot;)
-tags_df &lt;- read.csv(&quot;./goodbooks-10k/tags.csv&quot;)
-book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)</code></pre>
+<pre class="r"><code>ratings_df &lt;- read.csv(&quot;./goodbooks-10k/ratings.csv&quot;)%&gt;%
+  as_tibble()
+tags_df &lt;- read.csv(&quot;./goodbooks-10k/tags.csv&quot;)%&gt;%
+  as_tibble()
+book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)%&gt;%
+  as_tibble()</code></pre>
 <p>One of the things we are interested in is the genre of certain books. We can narrow down the genres we are interested in with pipeline that filters for certain genre names.</p>
 <pre class="r"><code>tags_df &lt;- tags_df %&gt;%
   filter(tag_name %in% c(
@@ -370,58 +331,50 @@ book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)</code></p
     &quot;science-fiction&quot;,
     &quot;thriller&quot;,
     &quot;young-adult&quot;
-  ))
+  )) %&gt;%
+  as_tibble()
+
 tags_df</code></pre>
-<pre><code>##   tag_id          tag_name
-## 1  11305           fantasy
-## 2  14821            horror
-## 3  20939           mystery
+<pre><code>## # A tibble: 8 x 2
+##   tag_id tag_name         
+##    &lt;int&gt; &lt;fct&gt;            
+## 1  11305 fantasy          
+## 2  14821 horror           
+## 3  20939 mystery          
 ## 4  25438 realistic-fiction
-## 5  26138           romance
-## 6  26837   science-fiction
-## 7  30358          thriller
-## 8  33114       young-adult</code></pre>
+## 5  26138 romance          
+## 6  26837 science-fiction  
+## 7  30358 thriller         
+## 8  33114 young-adult</code></pre>
 <p>However, this information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by joining data across different datasets through a common attribute. Here, we construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>, and then <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>. We can see that <code>tag_name</code> does indeed describe the genre of the books it’s associated with.</p>
 <pre class="r"><code>book_genres_df &lt;- books_df %&gt;%
   inner_join(book_tags_df, by=&quot;goodreads_book_id&quot;) %&gt;%
   inner_join(tags_df, by=&quot;tag_id&quot;) %&gt;%
   select(&quot;book_id&quot;, &quot;title&quot;, &quot;tag_name&quot;)
-  
-head(book_genres_df, 15)</code></pre>
-<pre><code>##    book_id                                                    title
-## 1        1                  The Hunger Games (The Hunger Games, #1)
-## 2        1                  The Hunger Games (The Hunger Games, #1)
-## 3        1                  The Hunger Games (The Hunger Games, #1)
-## 4        1                  The Hunger Games (The Hunger Games, #1)
-## 5        1                  The Hunger Games (The Hunger Games, #1)
-## 6        2 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)
-## 7        2 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)
-## 8        2 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1)
-## 9        3                                  Twilight (Twilight, #1)
-## 10       3                                  Twilight (Twilight, #1)
-## 11       3                                  Twilight (Twilight, #1)
-## 12       3                                  Twilight (Twilight, #1)
-## 13       4                                    To Kill a Mockingbird
-## 14       4                                    To Kill a Mockingbird
-## 15       4                                    To Kill a Mockingbird
-##             tag_name
-## 1        young-adult
-## 2            fantasy
-## 3    science-fiction
-## 4            romance
-## 5           thriller
-## 6            fantasy
-## 7        young-adult
-## 8            mystery
-## 9        young-adult
-## 10           fantasy
-## 11            horror
-## 12   science-fiction
-## 13       young-adult
-## 14 realistic-fiction
-## 15           mystery</code></pre>
-<p>Now we can use <code>book_genres_df</code> to try to figure out Goodreads readership. Let’s build another pipeline to join with <code>ratings_df</code> to link users with the genres of the books they rated. We can do more data manipulation from there to end up with a table of mean ratings in each genre of interest for each users.</p>
-<pre class="r"><code># This takes awhile to run...
+
+book_genres_df %&gt;%
+  select(&quot;title&quot;, &quot;tag_name&quot;) %&gt;%
+  head(15)</code></pre>
+<pre><code>## # A tibble: 15 x 2
+##    title                                                    tag_name         
+##    &lt;fct&gt;                                                    &lt;fct&gt;            
+##  1 The Hunger Games (The Hunger Games, #1)                  young-adult      
+##  2 The Hunger Games (The Hunger Games, #1)                  fantasy          
+##  3 The Hunger Games (The Hunger Games, #1)                  science-fiction  
+##  4 The Hunger Games (The Hunger Games, #1)                  romance          
+##  5 The Hunger Games (The Hunger Games, #1)                  thriller         
+##  6 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1) fantasy          
+##  7 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1) young-adult      
+##  8 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1) mystery          
+##  9 Twilight (Twilight, #1)                                  young-adult      
+## 10 Twilight (Twilight, #1)                                  fantasy          
+## 11 Twilight (Twilight, #1)                                  horror           
+## 12 Twilight (Twilight, #1)                                  science-fiction  
+## 13 To Kill a Mockingbird                                    young-adult      
+## 14 To Kill a Mockingbird                                    realistic-fiction
+## 15 To Kill a Mockingbird                                    mystery</code></pre>
+<p>Now we can use <code>book_genres_df</code> to try to figure out Goodreads readership. Let’s build another pipeline to join with <code>ratings_df</code> to link users with the genres of the books they rated. We can do more data manipulation from there to end up with a table of mean ratings in each genre of interest for each users. The ratings range from 1 to 5. We also choose to designate a mean rating of -5 to genres with no rating.</p>
+<pre class="r"><code># Note: This takes awhile to run...
 
 user_features_raw_df &lt;- ratings_df %&gt;%
   inner_join(book_genres_df, by=&quot;book_id&quot;) %&gt;%
@@ -430,52 +383,117 @@ user_features_raw_df &lt;- ratings_df %&gt;%
 
 user_features_df &lt;- user_features_raw_df %&gt;%
   group_by(user_id) %&gt;%
-  summarize_all(mean, na.rm=TRUE)
+  summarize_all(mean, na.rm=TRUE) %&gt;%
+  select(-user_id,) %&gt;%
+  mutate_if(~ any(is.na(.x)),~ if_else(is.na(.x),-5,.x)) # Replace na with -5
+
+# Convert column names to snake_case
+colnames(user_features_df) = to_snake_case(colnames(user_features_df))
 
 head(user_features_df, 15)</code></pre>
-<pre><code>## # A tibble: 15 x 9
-##    user_id fantasy horror mystery `realistic-fict~ romance `science-fictio~
-##      &lt;int&gt;   &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;
-##  1       1    3.55   3.29    3.4              3.51    3.45             3.14
-##  2       2    4.85   5       4.9              4.38    4.12             4.75
-##  3       3    1.45   1.5     1.24             2       1.76             1.17
-##  4       4    3.90   3.59    3.55             3.65    3.44             3.54
-##  5       5    4.11   4.03    4.03             3.95    3.93             4.11
-##  6       6    4.2    4.25    4.14             4.29    4.43             4.17
-##  7       7    3.79   3.78    3.76             4       3.51             3.76
-##  8       8    4.09   3.95    3.81             3.25    3.17             4.42
-##  9       9    3.66   3.67    3.25             3.37    3.52             3.58
-## 10      10    4.02   3.88    3.92             3.86    3.76             3.89
-## 11      11    3.63   3.69    3.42             3.59    3.44             3.4 
-## 12      12    3.54   3.38    3.85             3.86    3.56             3.81
-## 13      13    3.64   4       4.33             4.29    4.11             4   
-## 14      14    3.61   3.6     3.6              3.08    3.32             3.66
-## 15      15    4.26   4.45    4                4.35    4.31             4.33
-## # ... with 2 more variables: thriller &lt;dbl&gt;, `young-adult` &lt;dbl&gt;</code></pre>
+<pre><code>## # A tibble: 15 x 8
+##    fantasy horror mystery realistic_ficti~ romance science_fiction thriller
+##      &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;   &lt;dbl&gt;           &lt;dbl&gt;    &lt;dbl&gt;
+##  1    3.55   3.29    3.4              3.51    3.45            3.14     3.4 
+##  2    4.85   5       4.9              4.38    4.12            4.75     4.67
+##  3    1.45   1.5     1.24             2       1.76            1.17     1.13
+##  4    3.90   3.59    3.55             3.65    3.44            3.54     3.18
+##  5    4.11   4.03    4.03             3.95    3.93            4.11     4   
+##  6    4.2    4.25    4.14             4.29    4.43            4.17     4.25
+##  7    3.79   3.78    3.76             4       3.51            3.76     3.6 
+##  8    4.09   3.95    3.81             3.25    3.17            4.42     3.4 
+##  9    3.66   3.67    3.25             3.37    3.52            3.58     3.03
+## 10    4.02   3.88    3.92             3.86    3.76            3.89     3.96
+## 11    3.63   3.69    3.42             3.59    3.44            3.4      3.69
+## 12    3.54   3.38    3.85             3.86    3.56            3.81     3.93
+## 13    3.64   4       4.33             4.29    4.11            4        4.4 
+## 14    3.61   3.6     3.6              3.08    3.32            3.66     3.31
+## 15    4.26   4.45    4                4.35    4.31            4.33     4.08
+## # ... with 1 more variable: young_adult &lt;dbl&gt;</code></pre>
 </div>
-<div id="data-analysis-and-visualization" class="section level1">
-<h1>Data Analysis and Visualization</h1>
-<p>One way we can better understand our data is through visualization. For example, if we want to see where the readership lies on average ratings for young adult and fantasy by plotting a 2D scatterplot. From the graph, it appears most users are clustered from 3 to 5, and there is not a strong overall preference for one genre versus the other.</p>
-<pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
+<div id="data-visualization-and-analysis" class="section level2">
+<h2>Data Visualization and Analysis</h2>
+<p>One way we can better understand our data is through visualization. For example, if we want to see where the readership lies on average ratings for young adult and fantasy by plotting a 2D scatterplot. From the graph, it appears most users are clustered from 3 to 5, and there is not a strong overall preference for one genre versus the other. There are also several users that appear to be readers of one genre but not the other, and at least one user that does not read from either.</p>
+<pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
   geom_point() +
   labs(
     title=&quot;User Average Ratings for Young Adult Versus Fantasy&quot;,
     x=&quot;Fantasy Rating&quot;,
     y=&quot;Young Adult Ratings&quot;
   )</code></pre>
-<pre><code>## Warning: Removed 105 rows containing missing values (geom_point).</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-<pre class="r"><code># TODO: maybe also do ANOVA??</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>While the graph above is fine for comparing two genres, for comparing many genres it becomes infeasible as it is hard visualize space beyond 3 dimensions. Furthermore, we are also interested in clustering our data. While we had done a very cursory grouping by eye-balling above, ideally, there should be a way to more formally say which data points form a group with one another.</p>
+<p>The solution to both of these problems is using a combination of K-means clustering to determine groups of similar readers and principle component analysis (PCA) to reduce the dimensions of our feature vectors for visualization in 2D space.</p>
+<p><strong>TODO: Research and talk about kmeans</strong></p>
+<p><strong>TODO: Research and talk about pca</strong></p>
+<pre class="r"><code># K-means
+# TODO: look at variance?????
+
+set.seed(320)
+
+kmeans_res &lt;- kmeans(user_features_df, 5)
+kmeans_res$centers</code></pre>
+<pre><code>##    fantasy    horror  mystery realistic_fiction  romance science_fiction
+## 1 4.050004  4.053874 4.073852         -5.000000 4.017203        3.960832
+## 2 3.904492  3.769418 3.866276          3.803514 3.817771        3.867783
+## 3 3.535047 -5.000000 3.991061          3.883914 3.959537        1.899152
+## 4 4.475997  4.413759 4.457708          4.375622 4.412821        4.461388
+## 5 3.356341  3.185821 3.332332          3.320997 3.300912        3.137580
+##   thriller young_adult
+## 1 3.963249    3.997335
+## 2 3.821197    3.906007
+## 3 3.133296    4.092793
+## 4 4.440714    4.461953
+## 5 3.151612    3.378253</code></pre>
+<pre class="r"><code>autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
+  labs(title=&quot;Readership Clusters&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Manually without autoplot
+#pca_res &lt;- prcomp(data, center=TRUE, scale.=TRUE)
+
+#plot_data &lt;- pca_res$x[,1:2] %&gt;%
+#  as_tibble() %&gt;%
+#  mutate(cluster=factor(kmeans_res$cluster))
+
+#ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+#  geom_point()</code></pre>
 </div>
-<div id="predictions" class="section level1">
-<h1>Predictions</h1>
-<pre class="r"><code># TODO: kmeans clustering</code></pre>
+<div id="predictions" class="section level2">
+<h2>Predictions</h2>
+<pre class="r"><code># TODO: cluster prediction (logistic regression? decision tree?)
+
+training_data &lt;- user_features_df %&gt;%
+  mutate(cluster=kmeans_res$cluster)
+
+head(training_data, 15)</code></pre>
+<pre><code>## # A tibble: 15 x 9
+##    fantasy horror mystery realistic_ficti~ romance science_fiction thriller
+##      &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;   &lt;dbl&gt;           &lt;dbl&gt;    &lt;dbl&gt;
+##  1    3.55   3.29    3.4              3.51    3.45            3.14     3.4 
+##  2    4.85   5       4.9              4.38    4.12            4.75     4.67
+##  3    1.45   1.5     1.24             2       1.76            1.17     1.13
+##  4    3.90   3.59    3.55             3.65    3.44            3.54     3.18
+##  5    4.11   4.03    4.03             3.95    3.93            4.11     4   
+##  6    4.2    4.25    4.14             4.29    4.43            4.17     4.25
+##  7    3.79   3.78    3.76             4       3.51            3.76     3.6 
+##  8    4.09   3.95    3.81             3.25    3.17            4.42     3.4 
+##  9    3.66   3.67    3.25             3.37    3.52            3.58     3.03
+## 10    4.02   3.88    3.92             3.86    3.76            3.89     3.96
+## 11    3.63   3.69    3.42             3.59    3.44            3.4      3.69
+## 12    3.54   3.38    3.85             3.86    3.56            3.81     3.93
+## 13    3.64   4       4.33             4.29    4.11            4        4.4 
+## 14    3.61   3.6     3.6              3.08    3.32            3.66     3.31
+## 15    4.26   4.45    4                4.35    4.31            4.33     4.08
+## # ... with 2 more variables: young_adult &lt;dbl&gt;, cluster &lt;int&gt;</code></pre>
 </div>
-<div id="conclusion" class="section level1">
-<h1>Conclusion</h1>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p><strong>TODO: Write conclusion</strong></p>
+<div id="refs" class="references">
+<div id="ref-goodbooks2017">
+<p>Zajac, Zygmunt. 2017. “Goodbooks-10k: A New Dataset for Book Recommendations.” <em>FastML</em>.</p>
 </div>
-<div id="acknowledgements" class="section level1">
-<h1>Acknowledgements</h1>
+</div>
 </div>
 
 

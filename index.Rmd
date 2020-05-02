@@ -1,32 +1,43 @@
 ---
-title: "CMSC320 Final Project"
+title: "Analyzing Goodreads' Readership"
+bibliography: bibliography.bib
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE)
 library("tidyverse")
+library("snakecase")
+library("ggfortify")
 ```
 
-# Introduction
+Goodreads is a social cataloging site where users can search, track, and rate books. The site has
+over 20 million users, making it a large source of readership data. In this project,
+we demonstrate how one can leverage this data using the Goodbooks-10k dataset [@goodbooks2017] to
+do analysis on Goodread's readership by genre.
 
-# Loading and Pre-processing Data
+## Loading and Pre-processing Data
 
-Data can be easily loaded using R's `read.csv` method. For example, here we can load and display
+After being obtained,
+the data can be easily loaded using R's `read.csv` method. For example, here we can load and display
 `books.csv` to get a broad picture of one of the datasets we will be working
 with. We can see that `books.csv` organizes its data in a tabulated manner with each book as a row
 and the attributes of a book as columns.
 
 ```{r}
-books_df <- read.csv("./goodbooks-10k/books.csv")
+books_df <- read.csv("./goodbooks-10k/books.csv") %>%
+  as_tibble()
 head(books_df)
 ```
 
 Let's load the rest of our data as well.
 
 ```{r}
-ratings_df <- read.csv("./goodbooks-10k/ratings.csv")
-tags_df <- read.csv("./goodbooks-10k/tags.csv")
-book_tags_df <- read.csv("./goodbooks-10k/book_tags.csv")
+ratings_df <- read.csv("./goodbooks-10k/ratings.csv")%>%
+  as_tibble()
+tags_df <- read.csv("./goodbooks-10k/tags.csv")%>%
+  as_tibble()
+book_tags_df <- read.csv("./goodbooks-10k/book_tags.csv")%>%
+  as_tibble()
 ```
 
 One of the things we are interested in is the genre of certain books.
@@ -44,7 +55,9 @@ tags_df <- tags_df %>%
     "science-fiction",
     "thriller",
     "young-adult"
-  ))
+  )) %>%
+  as_tibble()
+
 tags_df
 ```
 
@@ -62,18 +75,21 @@ book_genres_df <- books_df %>%
   inner_join(book_tags_df, by="goodreads_book_id") %>%
   inner_join(tags_df, by="tag_id") %>%
   select("book_id", "title", "tag_name")
-  
-head(book_genres_df, 15)
+
+book_genres_df %>%
+  select("title", "tag_name") %>%
+  head(15)
 ```
 
 Now we can use `book_genres_df` to try to figure out Goodreads readership.
 Let's build another pipeline to join with `ratings_df` to link users
 with the genres of the books they rated. We can do more data manipulation
 from there to end up with a table of mean ratings in each genre of interest
-for each users.
+for each users. The ratings range from 1 to 5. We also choose to designate
+a mean rating of -5 to genres with no rating.
 
 ```{r}
-# This takes awhile to run...
+# Note: This takes awhile to run...
 
 user_features_raw_df <- ratings_df %>%
   inner_join(book_genres_df, by="book_id") %>%
@@ -82,21 +98,29 @@ user_features_raw_df <- ratings_df %>%
 
 user_features_df <- user_features_raw_df %>%
   group_by(user_id) %>%
-  summarize_all(mean, na.rm=TRUE)
+  summarize_all(mean, na.rm=TRUE) %>%
+  select(-user_id,) %>%
+  mutate_if(~ any(is.na(.x)),~ if_else(is.na(.x),-5,.x)) # Replace na with -5
+
+# Convert column names to snake_case
+colnames(user_features_df) = to_snake_case(colnames(user_features_df))
 
 head(user_features_df, 15)
 ```
 
-# Data Analysis and Visualization
+## Data Visualization and Analysis
 
 One way we can better understand our data is through visualization.
 For example, if we want to see where the readership lies on average
 ratings for young adult and fantasy by plotting a 2D scatterplot. From the
 graph, it appears most users are clustered from 3 to 5, and there is
-not a strong overall preference for one genre versus the other.
+not a strong overall preference for one genre versus the other. There are
+also several users that appear to be readers of one
+genre but not the other, and at least one user that
+does not read from either.
 
-```{r}
-ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
+```{r, fig.align='center'}
+ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
   geom_point() +
   labs(
     title="User Average Ratings for Young Adult Versus Fantasy",
@@ -104,16 +128,56 @@ ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
     y="Young Adult Ratings"
   )
 ```
-```{r}
-# TODO: maybe also do ANOVA??
+
+While the graph above is fine for comparing two genres, for comparing many genres
+it becomes infeasible as it is hard visualize space beyond 3 dimensions. Furthermore,
+we are also interested in clustering our data. While we had done a very cursory
+grouping by eye-balling above, ideally, there should be a way to more formally
+say which data points form a group with one another.
+
+The solution to both of these problems is using a combination of K-means clustering to determine
+groups of similar readers and principle component analysis (PCA) to reduce the dimensions of our
+feature vectors for visualization in 2D space.
+
+**TODO: Research and talk about kmeans**
+
+**TODO: Research and talk about pca**
+
+
+```{r, fig.align='center'}
+# K-means
+# TODO: look at variance?????
+
+set.seed(320)
+
+kmeans_res <- kmeans(user_features_df, 5)
+kmeans_res$centers
+
+autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
+  labs(title="Readership Clusters")
+
+# Manually without autoplot
+#pca_res <- prcomp(data, center=TRUE, scale.=TRUE)
+
+#plot_data <- pca_res$x[,1:2] %>%
+#  as_tibble() %>%
+#  mutate(cluster=factor(kmeans_res$cluster))
+
+#ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+#  geom_point()
 ```
 
-# Predictions
+## Predictions
 
 ```{r}
-# TODO: kmeans clustering
+# TODO: cluster prediction (logistic regression? decision tree?)
+
+training_data <- user_features_df %>%
+  mutate(cluster=kmeans_res$cluster)
+
+head(training_data, 15)
 ```
 
-# Conclusion
+## Conclusion
 
-# Acknowledgements
+**TODO: Write conclusion**
