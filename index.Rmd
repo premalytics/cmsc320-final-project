@@ -5,6 +5,8 @@ title: "CMSC320 Final Project"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache = TRUE)
 library("tidyverse")
+library("snakecase")
+library("ggfortify")
 ```
 
 # Introduction
@@ -82,7 +84,11 @@ user_features_raw_df <- ratings_df %>%
 
 user_features_df <- user_features_raw_df %>%
   group_by(user_id) %>%
-  summarize_all(mean, na.rm=TRUE)
+  summarize_all(mean, na.rm=TRUE) %>%
+  mutate_if(~ any(is.na(.x)),~ if_else(is.na(.x),0,.x)) # Replace na with 0 for now...
+
+# Convert to snake case
+colnames(user_features_df) = to_snake_case(colnames(user_features_df))
 
 head(user_features_df, 15)
 ```
@@ -96,7 +102,7 @@ graph, it appears most users are clustered from 3 to 5, and there is
 not a strong overall preference for one genre versus the other.
 
 ```{r}
-ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
+ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
   geom_point() +
   labs(
     title="User Average Ratings for Young Adult Versus Fantasy",
@@ -105,13 +111,21 @@ ggplot(user_features_df, mapping=aes(x=fantasy, y=`young-adult`)) +
   )
 ```
 ```{r}
-# TODO: maybe also do ANOVA??
+# K-Menas
+# TODO: look at variance
+
+data <- user_features_df %>%
+  select(-user_id,)
+
+kmeans_res <- kmeans(data, 10)
+kmeans_res$centers
+
+autoplot(kmeans_res, data=data)
 ```
 
 # Predictions
 
 ```{r}
-# TODO: kmeans clustering
 ```
 
 # Conclusion
