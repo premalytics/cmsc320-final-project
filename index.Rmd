@@ -89,6 +89,8 @@ for each users. The ratings range from 1 to 5. We also choose to designate
 a mean rating of -5 to genres with no rating.
 
 ```{r}
+# TODO: What should we replace na with??
+
 # Note: This takes awhile to run...
 
 user_features_raw_df <- ratings_df %>%
@@ -139,32 +141,45 @@ The solution to both of these problems is using a combination of K-means cluster
 groups of similar readers and principle component analysis (PCA) to reduce the dimensions of our
 feature vectors for visualization in 2D space.
 
-**TODO: Research and talk about kmeans**
+An issue with using K-means is that we do not have a good idea of what is a "good" K. We can
+try to address this by doing several test runs with different K's and comparing them, specifically,
+by comparing their total sum of squared distances (SSE). Intuitively, a good clustering should
+minimize the distances of points to the centroids of their respective clusters which would be reflected
+in a low total SSE.
+
+```{r, fig.align='center'}
+set.seed(320)
+
+# Figure out a good k using SSE
+sse <- sapply(1:10, function(k) {
+  sum(kmeans(user_features_df, k)$withinss)
+})
+
+ggplot(mapping=aes(x=seq_along(sse), y=sse)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title="SSE vs K in K-Means Clustering",
+    x="k",
+    y="SSE"
+  )
+```
+
+Looking at the graph, a K of about 8 seems reasonable to proceed with.
+
+**TODO: do silhouette too**
+**TODO: More research and talk about kmeans**
 
 **TODO: Research and talk about pca**
 
-
 ```{r, fig.align='center'}
-# K-means
-# TODO: look at variance?????
-
 set.seed(320)
 
-kmeans_res <- kmeans(user_features_df, 5)
+kmeans_res <- kmeans(user_features_df, 8)
 kmeans_res$centers
 
 autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
   labs(title="Readership Clusters")
-
-# Manually without autoplot
-#pca_res <- prcomp(data, center=TRUE, scale.=TRUE)
-
-#plot_data <- pca_res$x[,1:2] %>%
-#  as_tibble() %>%
-#  mutate(cluster=factor(kmeans_res$cluster))
-
-#ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
-#  geom_point()
 ```
 
 ## Predictions

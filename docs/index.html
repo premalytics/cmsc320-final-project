@@ -374,7 +374,9 @@ book_genres_df %&gt;%
 ## 14 To Kill a Mockingbird                                    realistic-fiction
 ## 15 To Kill a Mockingbird                                    mystery</code></pre>
 <p>Now we can use <code>book_genres_df</code> to try to figure out Goodreads readership. Let’s build another pipeline to join with <code>ratings_df</code> to link users with the genres of the books they rated. We can do more data manipulation from there to end up with a table of mean ratings in each genre of interest for each users. The ratings range from 1 to 5. We also choose to designate a mean rating of -5 to genres with no rating.</p>
-<pre class="r"><code># Note: This takes awhile to run...
+<pre class="r"><code># TODO: What should we replace na with??
+
+# Note: This takes awhile to run...
 
 user_features_raw_df &lt;- ratings_df %&gt;%
   inner_join(book_genres_df, by=&quot;book_id&quot;) %&gt;%
@@ -424,39 +426,51 @@ head(user_features_df, 15)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>While the graph above is fine for comparing two genres, for comparing many genres it becomes infeasible as it is hard visualize space beyond 3 dimensions. Furthermore, we are also interested in clustering our data. While we had done a very cursory grouping by eye-balling above, ideally, there should be a way to more formally say which data points form a group with one another.</p>
 <p>The solution to both of these problems is using a combination of K-means clustering to determine groups of similar readers and principle component analysis (PCA) to reduce the dimensions of our feature vectors for visualization in 2D space.</p>
-<p><strong>TODO: Research and talk about kmeans</strong></p>
+<p>An issue with using K-means is that we do not have a good idea of what is a “good” K. We can try to address this by doing several test runs with different K’s and comparing them, specifically, by comparing their total sum of squared distances (SSE). Intuitively, a good clustering should minimize the distances of points to the centroids of their respective clusters which would be reflected in a low total SSE.</p>
+<pre class="r"><code>set.seed(320)
+
+# Figure out a good k using SSE
+sse &lt;- sapply(1:10, function(k) {
+  sum(kmeans(user_features_df, k)$withinss)
+})
+
+ggplot(mapping=aes(x=seq_along(sse), y=sse)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title=&quot;SSE vs K in K-Means Clustering&quot;,
+    x=&quot;k&quot;,
+    y=&quot;SSE&quot;
+  )</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Looking at the graph, a K of about 8 seems reasonable to proceed with.</p>
+<p><strong>TODO: do silhouette too</strong> <strong>TODO: More research and talk about kmeans</strong></p>
 <p><strong>TODO: Research and talk about pca</strong></p>
-<pre class="r"><code># K-means
-# TODO: look at variance?????
+<pre class="r"><code>set.seed(320)
 
-set.seed(320)
-
-kmeans_res &lt;- kmeans(user_features_df, 5)
+kmeans_res &lt;- kmeans(user_features_df, 8)
 kmeans_res$centers</code></pre>
 <pre><code>##    fantasy    horror  mystery realistic_fiction  romance science_fiction
-## 1 4.050004  4.053874 4.073852         -5.000000 4.017203        3.960832
-## 2 3.904492  3.769418 3.866276          3.803514 3.817771        3.867783
-## 3 3.535047 -5.000000 3.991061          3.883914 3.959537        1.899152
-## 4 4.475997  4.413759 4.457708          4.375622 4.412821        4.461388
-## 5 3.356341  3.185821 3.332332          3.320997 3.300912        3.137580
-##   thriller young_adult
-## 1 3.963249    3.997335
-## 2 3.821197    3.906007
-## 3 3.133296    4.092793
-## 4 4.440714    4.461953
-## 5 3.151612    3.378253</code></pre>
+## 1 4.092027  4.059021 4.101761         -5.000000 4.045898        4.024838
+## 2 4.262018  4.166758 4.232314          4.150337 4.183048        4.237794
+## 3 3.646388 -5.000000 4.103732          3.953916 4.012417        2.146611
+## 4 4.688973  4.659520 4.682808          4.600889 4.641910        4.680575
+## 5 3.055382  2.868820 3.041681          3.035375 3.005059        2.973468
+## 6 3.554096  3.405294 3.656498          3.776187 3.888465       -1.594454
+## 7 3.549802  3.376292 3.516700          3.485445 3.477023        3.489239
+## 8 3.909434  3.778664 3.869412          3.807965 3.821126        3.872083
+##     thriller young_adult
+## 1  4.0189388    4.029697
+## 2  4.2017394    4.253009
+## 3  3.4250208    4.120074
+## 4  4.6786242    4.670236
+## 5  2.9522592    3.058343
+## 6 -0.3141662    3.849344
+## 7  3.4596721    3.571416
+## 8  3.8200357    3.910326</code></pre>
 <pre class="r"><code>autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
   labs(title=&quot;Readership Clusters&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code># Manually without autoplot
-#pca_res &lt;- prcomp(data, center=TRUE, scale.=TRUE)
-
-#plot_data &lt;- pca_res$x[,1:2] %&gt;%
-#  as_tibble() %&gt;%
-#  mutate(cluster=factor(kmeans_res$cluster))
-
-#ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
-#  geom_point()</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="predictions" class="section level2">
 <h2>Predictions</h2>
