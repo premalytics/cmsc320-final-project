@@ -148,11 +148,11 @@ The main issue with using K-means is that we do not have a good idea of what is 
 address this is by doing several test runs with different K's and comparing them, specifically,
 by comparing their total sum of squared distances (SSE). Intuitively, a good clustering should
 minimize the distances of points to the centroids of their respective clusters which would be reflected
-in a low total SSE.
+in a low total SSE [@kmeansTDS].
 
 While we want to lower variation within clusters, at the same time, we also want our clusters to actually be
 clusters. This means that for any data point, it should ideally be close to the centroid of its cluster
-and far from others, a metric known as the silhouette. While increasing K to an
+and far from others, a metric known as the silhouette [@kmeansUCR]. While increasing K to an
 unreasonably large number may reduce total SSE, data in such a clustering would have low silhouettes since data points in one
 cluster would be very close to data points in other clusters.
 

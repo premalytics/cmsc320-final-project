@@ -428,8 +428,8 @@ head(user_features_df, 15)</code></pre>
 <p>The solution to both of these problems is using a combination of K-means clustering to determine groups of similar readers and principle component analysis (PCA) to reduce the dimensions of our feature vectors for visualization in 2D space.</p>
 <div id="determining-k" class="section level3">
 <h3>Determining K</h3>
-<p>The main issue with using K-means is that we do not have a good idea of what is a “good” K. One way we can address this is by doing several test runs with different K’s and comparing them, specifically, by comparing their total sum of squared distances (SSE). Intuitively, a good clustering should minimize the distances of points to the centroids of their respective clusters which would be reflected in a low total SSE.</p>
-<p>While we want to lower variation within clusters, at the same time, we also want our clusters to actually be clusters. This means that for any data point, it should ideally be close to the centroid of its cluster and far from others, a metric known as the silhouette. While increasing K to an unreasonably large number may reduce total SSE, data in such a clustering would have low silhouettes since data points in one cluster would be very close to data points in other clusters.</p>
+<p>The main issue with using K-means is that we do not have a good idea of what is a “good” K. One way we can address this is by doing several test runs with different K’s and comparing them, specifically, by comparing their total sum of squared distances (SSE). Intuitively, a good clustering should minimize the distances of points to the centroids of their respective clusters which would be reflected in a low total SSE <span class="citation">(Dabbura 2018)</span>.</p>
+<p>While we want to lower variation within clusters, at the same time, we also want our clusters to actually be clusters. This means that for any data point, it should ideally be close to the centroid of its cluster and far from others, a metric known as the silhouette <span class="citation">(Boehmke, n.d.)</span>. While increasing K to an unreasonably large number may reduce total SSE, data in such a clustering would have low silhouettes since data points in one cluster would be very close to data points in other clusters.</p>
 <p>The goal of finding a good K then resides in reducing SSE while still trying to keep silhouette high. Let’s compute and graph both SSE and silhouette from a sample of the users to see what a good K might be.</p>
 <pre class="r"><code>set.seed(320)
 
@@ -523,6 +523,12 @@ head(training_data, 15)</code></pre>
 <h2>Conclusion</h2>
 <p><strong>TODO: Write conclusion</strong></p>
 <div id="refs" class="references">
+<div id="ref-kmeansUCR">
+<p>Boehmke, Bradley. n.d. “K-Means Cluster Analysis.” <em>UC Business Analytics R Programming Guide</em>.</p>
+</div>
+<div id="ref-kmeansTDS">
+<p>Dabbura, Imad. 2018. “Applications, Evaluation Methods, and Drawbacks.” <em>Towards Data Science</em>.</p>
+</div>
 <div id="ref-goodbooks2017">
 <p>Zajac, Zygmunt. 2017. “Goodbooks-10k: A New Dataset for Book Recommendations.” <em>FastML</em>.</p>
 </div>
