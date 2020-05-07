@@ -8,6 +8,7 @@ knitr::opts_chunk$set(cache = TRUE)
 library("tidyverse")
 library("snakecase")
 library("ggfortify")
+library("cluster")
 ```
 
 Goodreads is a social cataloging site where users can search, track, and rate books. The site has
@@ -141,46 +142,76 @@ The solution to both of these problems is using a combination of K-means cluster
 groups of similar readers and principle component analysis (PCA) to reduce the dimensions of our
 feature vectors for visualization in 2D space.
 
-An issue with using K-means is that we do not have a good idea of what is a "good" K. We can
-try to address this by doing several test runs with different K's and comparing them, specifically,
+### Determining K
+
+The main issue with using K-means is that we do not have a good idea of what is a "good" K. One way we can
+address this is by doing several test runs with different K's and comparing them, specifically,
 by comparing their total sum of squared distances (SSE). Intuitively, a good clustering should
 minimize the distances of points to the centroids of their respective clusters which would be reflected
 in a low total SSE.
 
+While we want to lower variation within clusters, at the same time, we also want our clusters to actually be
+clusters. This means that for any data point, it should ideally be close to the centroid of its cluster
+and far from others, a metric known as the silhouette. While increasing K to an
+unreasonably large number may reduce total SSE, data in such a clustering would have low silhouettes since data points in one
+cluster would be very close to data points in other clusters.
+
+The goal of finding a good K then resides in reducing SSE while still trying to keep silhouette high. Let's
+compute and graph both SSE and silhouette from a sample of the users to see what a good K might be.
+
 ```{r, fig.align='center'}
 set.seed(320)
 
-# Figure out a good k using SSE
-sse <- sapply(1:10, function(k) {
-  sum(kmeans(user_features_df, k)$withinss)
+k_range <- 2:20
+user_features_sample_df <- sample_n(user_features_df, 1000)
+
+# SSE
+sse <- sapply(k_range, function(k) {
+  kmeans(user_features_sample_df, k)$tot.withinss
 })
 
-ggplot(mapping=aes(x=seq_along(sse), y=sse)) +
+ggplot(mapping=aes(x=k_range, y=sse)) +
   geom_line() +
-  geom_point() +
+  geom_label(aes(label=k_range)) + 
   labs(
-    title="SSE vs K in K-Means Clustering",
+    title="Total SSE vs K",
     x="k",
-    y="SSE"
+    y="Total SSE"
+  )
+
+# Average silhouettes
+sil <- sapply(k_range, function(k) {
+  km.res <- kmeans(user_features_sample_df, centers=k)
+  ss <- silhouette(km.res$cluster, dist(user_features_sample_df))
+  mean(ss[,3])
+})
+
+ggplot(mapping=aes(x=k_range, y=sil)) +
+  geom_line() +
+  geom_label(aes(label=k_range)) + 
+  labs(
+    title="Average Silhouettes vs K",
+    x="k",
+    y="Average Silhouette"
   )
 ```
 
-Looking at the graph, a K of about 8 seems reasonable to proceed with.
-
-**TODO: do silhouette too**
-**TODO: More research and talk about kmeans**
-
-**TODO: Research and talk about pca**
+Observing both graphs, K = 6 appears to be a point where total SSE has begun to flatten but
+average silhouette is still somewhat high, making it a reasonable compromise for K. Let's try
+to cluster all of our users with this K.
 
 ```{r, fig.align='center'}
 set.seed(320)
 
-kmeans_res <- kmeans(user_features_df, 8)
+kmeans_res <- kmeans(user_features_df, 6)
 kmeans_res$centers
 
 autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
   labs(title="Readership Clusters")
 ```
+
+**TODO: talk about clusters**
+**TODO: Research and talk about pca**
 
 ## Predictions
 
