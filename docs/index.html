@@ -68,6 +68,7 @@ h6 {
 }
 </style>
 
+<link rel="stylesheet" href="style.css" type="text/css" />
 
 
 
@@ -291,10 +292,17 @@ $(document).ready(function () {
 </div>
 
 
-<p>Goodreads is a social cataloging site where users can search, track, and rate books. The site has over 20 million users, making it a large source of readership data. In this project, we demonstrate how one can leverage this data using the Goodbooks-10k dataset <span class="citation">(Zajac 2017)</span> to do analysis on Goodread’s readership by genre.</p>
+<p><a href="https://www.goodreads.com">Goodreads</a> is a popular social cataloging website where users can search, track, and rate books. The site has over 20 million users and 50 million book reviews, making it a very large source of readership data.</p>
+<div class="figure">
+<img src="images/screenshot_01.png" alt="Goodreads site" />
+<p class="caption">Goodreads site</p>
+</div>
+<p>With so many users and reviews, an interesting experiment would be to see if we can generalize the readership of Goodreads based on how users rate books from certain genres. From this, we would be able to see if, for instance, there is a large group of sci-fi fans or a large group of romance and YA fanatics that also hate horror.</p>
+<p>In this project, we demonstrate the process of doing this kind of analysis from the ground up by leveraging and manipulating a subset of Goodreads’ data using the Goodbooks-10k dataset <span class="citation">(Zajac 2017)</span> and performing statistical and cluster analysis to try to try to paint a generalized picture of the site’s readership.</p>
 <div id="loading-and-pre-processing-data" class="section level2">
 <h2>Loading and Pre-processing Data</h2>
-<p>After being obtained, the data can be easily loaded using R’s <code>read.csv</code> method. For example, here we can load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and the attributes of a book as columns.</p>
+<p>Goodbooks-10k consists of several CSV files containing information about the top 10,000 most rated books on Goodreads, including book metadata, tags, and relevant user ratings.</p>
+<p>The CSV files can be easily loaded using R’s <code>read.csv</code> method. For example, here we load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and each book attribute as a column.</p>
 <pre class="r"><code>books_df &lt;- read.csv(&quot;./goodbooks-10k/books.csv&quot;) %&gt;%
   as_tibble()
 head(books_df)</code></pre>
@@ -320,7 +328,7 @@ tags_df &lt;- read.csv(&quot;./goodbooks-10k/tags.csv&quot;)%&gt;%
   as_tibble()
 book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)%&gt;%
   as_tibble()</code></pre>
-<p>One of the things we are interested in is the genre of certain books. We can narrow down the genres we are interested in with pipeline that filters for certain genre names.</p>
+<p>With our data loaded, we can begin to do some data manipulation. Since we are interested in analyzing various genres, let’s start by narrowing down <code>tags_df</code> with the genre tags we are interested in. We can do this using a <strong>pipeline</strong> as shown below.</p>
 <pre class="r"><code>tags_df &lt;- tags_df %&gt;%
   filter(tag_name %in% c(
     &quot;fantasy&quot;,
@@ -346,7 +354,7 @@ tags_df</code></pre>
 ## 6  26837 science-fiction  
 ## 7  30358 thriller         
 ## 8  33114 young-adult</code></pre>
-<p>However, this information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by joining data across different datasets through a common attribute. Here, we construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>, and then <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>. We can see that <code>tag_name</code> does indeed describe the genre of the books it’s associated with.</p>
+<p>However, this tag information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by <strong>joining</strong> data across different data frames through a common attribute. Here, we construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>. From there, we then link <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>. From the resulting data frame, we can see that <code>tag_name</code> does indeed describe the genre of books it is associated with.</p>
 <pre class="r"><code>book_genres_df &lt;- books_df %&gt;%
   inner_join(book_tags_df, by=&quot;goodreads_book_id&quot;) %&gt;%
   inner_join(tags_df, by=&quot;tag_id&quot;) %&gt;%
@@ -373,8 +381,10 @@ book_genres_df %&gt;%
 ## 13 To Kill a Mockingbird                                    young-adult      
 ## 14 To Kill a Mockingbird                                    realistic-fiction
 ## 15 To Kill a Mockingbird                                    mystery</code></pre>
-<p>Now we can use <code>book_genres_df</code> to try to figure out Goodreads readership. Let’s build another pipeline to join with <code>ratings_df</code> to link users with the genres of the books they rated. We can do more data manipulation from there to end up with a table of mean ratings in each genre of interest for each users. The ratings range from 1 to 5. We also choose to designate a mean rating of -5 to genres with no rating.</p>
-<pre class="r"><code># Note: This takes awhile to run...
+<p>Let’s build another pipeline to join with <code>ratings_df</code> and link users with the genres of the books they rated. We can do a summary on the data frame from there to end up with a table of mean ratings in each genre of interest for all users. These ratings range from 1 to 5, with a mean rating of -5 to mark genres with no rating.</p>
+<pre class="r"><code># TODO: What should we replace na with??
+
+# Note: This takes awhile to run...
 
 user_features_raw_df &lt;- ratings_df %&gt;%
   inner_join(book_genres_df, by=&quot;book_id&quot;) %&gt;%
@@ -413,7 +423,8 @@ head(user_features_df, 15)</code></pre>
 </div>
 <div id="data-visualization-and-analysis" class="section level2">
 <h2>Data Visualization and Analysis</h2>
-<p>One way we can better understand our data is through visualization. For example, if we want to see where the readership lies on average ratings for young adult and fantasy by plotting a 2D scatterplot. From the graph, it appears most users are clustered from 3 to 5, and there is not a strong overall preference for one genre versus the other. There are also several users that appear to be readers of one genre but not the other, and at least one user that does not read from either.</p>
+<p>Now that we have transformed the original data into a data frame of average genre ratings for all users, we can begin analyzing users based on genre ratings.</p>
+<p>One way to better understand data in general is through visualization. For example, if we want to see where the readership lies on ratings for young adult versus fantasy, we can do so by plotting the average ratings from both genres on a 2D scatterplot.</p>
 <pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
   geom_point() +
   labs(
@@ -422,41 +433,88 @@ head(user_features_df, 15)</code></pre>
     y=&quot;Young Adult Ratings&quot;
   )</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>While the graph above is fine for comparing two genres, for comparing many genres it becomes infeasible as it is hard visualize space beyond 3 dimensions. Furthermore, we are also interested in clustering our data. While we had done a very cursory grouping by eye-balling above, ideally, there should be a way to more formally say which data points form a group with one another.</p>
-<p>The solution to both of these problems is using a combination of K-means clustering to determine groups of similar readers and principle component analysis (PCA) to reduce the dimensions of our feature vectors for visualization in 2D space.</p>
-<p><strong>TODO: Research and talk about kmeans</strong></p>
-<p><strong>TODO: Research and talk about pca</strong></p>
-<pre class="r"><code># K-means
-# TODO: look at variance?????
+<p>From the graph, it appears most user have average ratings clustered between 3 and 5 with no strong preference for one genre versus the other. There are also several users that appear to be readers of one genre but not the other, and at least one user that does not read from either.</p>
+<div id="clustering-for-higher-dimensions" class="section level3">
+<h3>Clustering for Higher Dimensions</h3>
+<p>While a 2D graph is fine for comparing two genres, it becomes harder to visualize data like this beyond 3 variables since we run out of spatial dimensions. Furthermore, we are also interested in clustering our data. While we had done a very cursory grouping by eye-balling the data above, ideally, there should be a way to more formally say which data points form a group with one another.</p>
+<p>The solution to both of these problems is found in two methods known as <strong>K-means clustering</strong> and <strong>principal component analysis (PCA)</strong>.</p>
+<p>K-means clustering is a way to cluster, or group, data points. The algorithm designates K centroids representing the centers of their respective clusters. Each data point is assigned to the closest centroid, and the algorithm iteratively optimizes the centroids try to reduce the total distance between it and all the points in its cluster.</p>
+<div class="figure">
+<img src="images/kmeans_iris.png" alt="K-means on iris flower species" />
+<p class="caption">K-means on iris flower species</p>
+</div>
+<p>Meanwhile, principal component analysis (PCA) is a way to reduce the dimensions in high-dimensional data while still trying to preserve features from the original space. Roughly, PCA tries to find a set of linear transformations from the original data that prioritizes maximizing variance for each dimension of the transformed data. At the end, the first two dimensions of the transformed data will ideally encode enough of the variance from the original high-dimensional data that graphing only those two dimensions should suffice in representing the original data, making PCA a very a useful tool for visualization.</p>
+<div class="figure">
+<img src="images/pcafish.png" alt="Example PCA: The transformed coordinate system in red maximizes the variance of the pixel locations." />
+<p class="caption">Example PCA: The transformed coordinate system in red maximizes the variance of the pixel locations.</p>
+</div>
+<p>When used in conjunction, K-means clustering will allow us to formally cluster multi-dimensional data and PCA will allow us graph the clustered data in 2D for easy visualization.</p>
+</div>
+<div id="determining-k" class="section level3">
+<h3>Determining K</h3>
+<p>A key roadblock with using K-means is that we do not have a good idea of what is a “good” K, or number of clusters. One way we can address this is by doing several test runs with different K’s and comparing them, specifically, by comparing their total <strong>sum of squared distances (SSE)</strong>. Intuitively, a good clustering should minimize the distances of points to the centroids of their respective clusters which would be reflected in a low total SSE <span class="citation">(Dabbura 2018)</span>.</p>
+<p>While we want to lower variation within clusters, at the same time, we also want our clusters to actually be clusters. This means that for any data point, it should ideally be close to the centroid of its cluster and far from others, a metric known as the <strong>silhouette</strong> <span class="citation">(Boehmke, n.d.)</span>. While increasing K to an unreasonably large number may reduce total SSE, data in such a clustering would have low silhouettes since data points in one cluster would be very close to data points in other clusters.</p>
+<p>The goal of finding a good K then resides in reducing SSE while still trying to keep silhouette high. Let’s compute and graph both SSE and silhouette from a sample of the users to see what a good K might be.</p>
+<pre class="r"><code>set.seed(320)
 
-set.seed(320)
+k_range &lt;- 2:20
+user_features_sample_df &lt;- sample_n(user_features_df, 1000)
 
-kmeans_res &lt;- kmeans(user_features_df, 5)
+# SSE
+sse &lt;- sapply(k_range, function(k) {
+  kmeans(user_features_sample_df, k)$tot.withinss
+})
+
+ggplot(mapping=aes(x=k_range, y=sse)) +
+  geom_line() +
+  geom_label(aes(label=k_range)) + 
+  labs(
+    title=&quot;Total SSE vs K&quot;,
+    x=&quot;k&quot;,
+    y=&quot;Total SSE&quot;
+  )</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Average silhouettes
+sil &lt;- sapply(k_range, function(k) {
+  km.res &lt;- kmeans(user_features_sample_df, centers=k)
+  ss &lt;- silhouette(km.res$cluster, dist(user_features_sample_df))
+  mean(ss[,3])
+})
+
+ggplot(mapping=aes(x=k_range, y=sil)) +
+  geom_line() +
+  geom_label(aes(label=k_range)) + 
+  labs(
+    title=&quot;Average Silhouettes vs K&quot;,
+    x=&quot;k&quot;,
+    y=&quot;Average Silhouette&quot;
+  )</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-7-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Observing both graphs, K = 6 appears to be a point where total SSE has begun to flatten but average silhouette is still somewhat high, making it a reasonable compromise for K. With K in hand, we can run K-means clustering on the full data now.</p>
+<pre class="r"><code>set.seed(320)
+
+kmeans_res &lt;- kmeans(user_features_df, 6)
 kmeans_res$centers</code></pre>
 <pre><code>##    fantasy    horror  mystery realistic_fiction  romance science_fiction
-## 1 4.050004  4.053874 4.073852         -5.000000 4.017203        3.960832
-## 2 3.904492  3.769418 3.866276          3.803514 3.817771        3.867783
+## 1 4.082210  4.058811 4.089536         -5.000000 4.032686        3.992722
+## 2 4.069565  3.952256 4.034179          3.963205 3.984413        4.037278
 ## 3 3.535047 -5.000000 3.991061          3.883914 3.959537        1.899152
-## 4 4.475997  4.413759 4.457708          4.375622 4.412821        4.461388
-## 5 3.356341  3.185821 3.332332          3.320997 3.300912        3.137580
+## 4 4.574821  4.527793 4.562151          4.475765 4.517483        4.562859
+## 5 3.617038  3.454431 3.579493          3.538471 3.536758        3.567962
+## 6 3.113330  2.955288 3.112006          3.132536 3.098398        2.590623
 ##   thriller young_adult
-## 1 3.963249    3.997335
-## 2 3.821197    3.906007
+## 1 3.995147    4.029354
+## 2 3.992261    4.067606
 ## 3 3.133296    4.092793
-## 4 4.440714    4.461953
-## 5 3.151612    3.378253</code></pre>
-<pre class="r"><code>autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
+## 4 4.551805    4.556903
+## 5 3.527587    3.626548
+## 6 2.693218    3.149608</code></pre>
+<pre class="r"><code># Autoplot automatically does PCA
+autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
   labs(title=&quot;Readership Clusters&quot;)</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code># Manually without autoplot
-#pca_res &lt;- prcomp(data, center=TRUE, scale.=TRUE)
-
-#plot_data &lt;- pca_res$x[,1:2] %&gt;%
-#  as_tibble() %&gt;%
-#  mutate(cluster=factor(kmeans_res$cluster))
-
-#ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
-#  geom_point()</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><strong>TODO: talk about clusters</strong></p>
+</div>
 </div>
 <div id="predictions" class="section level2">
 <h2>Predictions</h2>
@@ -489,7 +547,16 @@ head(training_data, 15)</code></pre>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
 <p><strong>TODO: Write conclusion</strong></p>
+</div>
+<div id="references" class="section level2 unnumbered">
+<h2>References</h2>
 <div id="refs" class="references">
+<div id="ref-kmeansUCR">
+<p>Boehmke, Bradley. n.d. “K-Means Cluster Analysis.” <em>UC Business Analytics R Programming Guide</em>.</p>
+</div>
+<div id="ref-kmeansTDS">
+<p>Dabbura, Imad. 2018. “Applications, Evaluation Methods, and Drawbacks.” <em>Towards Data Science</em>.</p>
+</div>
 <div id="ref-goodbooks2017">
 <p>Zajac, Zygmunt. 2017. “Goodbooks-10k: A New Dataset for Book Recommendations.” <em>FastML</em>.</p>
 </div>

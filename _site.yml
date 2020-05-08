@@ -7,4 +7,5 @@ navbar:
 exclude: "goodbooks-10k"
 output:
   html_document:
+    css: style.css
     theme: paper

@@ -1,0 +1,19 @@
+p {
+	font-size: 1.5em;
+	margin-top: 2em;
+	margin-bottom: 2em;
+}
+
+.container-fluid {
+	margin: 1em;
+}
+
+.section {
+	margin-top: 5em;
+}
+
+.caption {
+	text-align: center;
+	font-size: 1.2em;
+	font-style: italic;
+}
