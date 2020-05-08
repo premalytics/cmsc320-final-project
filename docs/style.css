@@ -11,3 +11,9 @@ p {
 .section {
 	margin-top: 5em;
 }
+
+.caption {
+	text-align: center;
+	font-size: 1.2em;
+	font-style: italic;
+}
