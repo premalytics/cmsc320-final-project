@@ -271,6 +271,16 @@ autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
 ```{r}
 # TODO: cluster prediction (logistic regression? decision tree?)
 
+# PCA
+pca_res <- prcomp(data, center=TRUE, scale.=TRUE)
+plot_data <- pca_res$x[,1:2] %>%
+  as_tibble() %>%
+  mutate(cluster=factor(kmeans_res$cluster))
+
+ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+  geom_point()
+
+# Set up training data for cluster prediction
 training_data <- user_features_df %>%
   mutate(cluster=kmeans_res$cluster)
 

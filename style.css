@@ -9,7 +9,10 @@ h1,h2,h3,h4,h5,h6 {
 	padding-bottom: 0.5em;
 }
 
-li {
+ul:not(.nav) {
+	font-size: 1.5em;
+}
+ol:not(.nav) {
 	font-size: 1.5em;
 }
 

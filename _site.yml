@@ -4,7 +4,8 @@ navbar:
   left:
     - text: "← Back to Home"
       href: /
-exclude: "goodbooks-10k"
+exclude:
+  - "goodbooks-10k"
 output:
   html_document:
     css: style.css

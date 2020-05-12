@@ -482,6 +482,16 @@ autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
 <h2>Making Predictions</h2>
 <pre class="r"><code># TODO: cluster prediction (logistic regression? decision tree?)
 
+# PCA
+pca_res &lt;- prcomp(data, center=TRUE, scale.=TRUE)
+plot_data &lt;- pca_res$x[,1:2] %&gt;%
+  as_tibble() %&gt;%
+  mutate(cluster=factor(kmeans_res$cluster))
+
+ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+  geom_point()</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code># Set up training data for cluster prediction
 training_data &lt;- user_features_df %&gt;%
   mutate(cluster=kmeans_res$cluster)
 

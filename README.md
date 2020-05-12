@@ -1,6 +1,6 @@
-# CMSC320 final project
+# Goodreads Readership Clustering
 
-Analysis of Goodreads readership
+Analysis of Goodreads readership. Created for 2020 CMSC320 final project.
 
 ## Getting Data
 After cloning project:
@@ -11,3 +11,22 @@ After cloning project:
 ## Build
   - Install Rmarkdown: `install.packages("rmarkdown")`
   - Open project in Rstudio and build with `Ctrl-Shift-B`
+  
+
+## Contributors
+Work for this project was split up as follows:
+
+**Jason Hu**
+
+  - 
+
+**Jason Maa**
+
+  - Data pre-processing
+  - K-means analysis and evaluation
+  - Discussion and conclusion write-up
+  - Website aesthetics
+
+**Robert Yang**
+
+  - 
