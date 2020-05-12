@@ -11,6 +11,8 @@ library("ggfortify")
 library("cluster")
 ```
 
+## Introduction
+
 [Goodreads](https://www.goodreads.com) is a popular social cataloging website where users can search, track, and rate books. The site has
 over 20 million users and 50 million book reviews, making it a very large source of readership data.
 
@@ -18,18 +20,22 @@ over 20 million users and 50 million book reviews, making it a very large source
 
 
 With so many users and reviews, an interesting experiment would be to see if
-we can generalize the readership of Goodreads based on how users rate books from
-certain genres. From this, we would be able to see if, for instance, there is
+we can characterize the readership of Goodreads using user ratings.
+Specifically we are interested in answering the question,
+"Based on user ratings data, can we find common groups of users by how they rate certain genres of books?"
+With such information, we would be able to see if, for instance, there is
 a large group of sci-fi fans or a large group of romance and YA fanatics that
-also hate horror.
+also happen to hate horror.
+
+> "Based on user ratings data, can we find common groups of users by how they rate certain genres of books?"
 
 In this project, we demonstrate the process of doing this kind of analysis from the ground up by leveraging and manipulating
 a subset of Goodreads' data using the Goodbooks-10k dataset [@goodbooks2017] and performing
 statistical and cluster analysis to try to try to paint a generalized picture of the site's readership.
 
-## Loading and Pre-processing Data
+## Understanding and Pre-processing the Data
 
-Goodbooks-10k consists of several CSV files containing information about the top 10,000 most rated
+The Goodbooks-10k data obtained from GitHub consists of several CSV files with information about the top 10,000 most rated
 books on Goodreads, including book metadata, tags, and relevant user ratings.
 
 The CSV files can be easily loaded using R's `read.csv` method. For example, here we load and display
@@ -40,7 +46,8 @@ and each book attribute as a column.
 ```{r}
 books_df <- read.csv("./goodbooks-10k/books.csv") %>%
   as_tibble()
-head(books_df)
+head(books_df) %>%
+  rmarkdown::paged_table()
 ```
 
 Let's load the rest of our data as well.
@@ -73,17 +80,17 @@ tags_df <- tags_df %>%
   )) %>%
   as_tibble()
 
-tags_df
+tags_df %>%
+  rmarkdown::paged_table()
 ```
 
 However, this tag information is not very helpful by itself. We
 want to be able to use it in conjunction with the other data
 we have. One way to accomplish this is by **joining** data across
-different data frames through a common attribute. Here, we construct a pipeline
+different data frames through a common attribute. We construct a pipeline
 to link data from `books_df` and `book_tags_df` through the shared
 attribute, `goodreads_book_id`. From there, we then link `book_tags_df` and `tags_df`
-through `tag_id`. From the resulting data frame, we can see that `tag_name` does indeed describe
-the genre of books it is associated with.
+through `tag_id`.
 
 ```{r}
 book_genres_df <- books_df %>%
@@ -93,8 +100,12 @@ book_genres_df <- books_df %>%
 
 book_genres_df %>%
   select("title", "tag_name") %>%
-  head(15)
+  head(15) %>%
+  rmarkdown::paged_table()
 ```
+
+From the resulting data frame, we can see that `tag_name` does indeed describe
+the genre of books it is associated with.
 
 Let's build another pipeline to join with `ratings_df` and link users
 with the genres of the books they rated. We can do a summary on the data frame
@@ -103,8 +114,6 @@ for all users. These ratings range from 1 to 5, with a mean rating of -5 to mark
 genres with no rating.
 
 ```{r}
-# TODO: What should we replace na with??
-
 # Note: This takes awhile to run...
 
 user_features_raw_df <- ratings_df %>%
@@ -121,10 +130,12 @@ user_features_df <- user_features_raw_df %>%
 # Convert column names to snake_case
 colnames(user_features_df) = to_snake_case(colnames(user_features_df))
 
-head(user_features_df, 15)
+head(user_features_df, 15) %>%
+  mutate_all(round, 2) %>%
+  rmarkdown::paged_table()
 ```
 
-## Data Visualization and Analysis
+## Visualization and Analysis
 
 Now that we have transformed the original data into a data frame of average
 genre ratings for all users, we can begin analyzing users
@@ -245,16 +256,17 @@ in hand, we can run K-means clustering on the full data now.
 set.seed(320)
 
 kmeans_res <- kmeans(user_features_df, 6)
-kmeans_res$centers
+kmeans_res$centers %>%
+  as_tibble() %>%
+  mutate_all(round, 2) %>%
+  rmarkdown::paged_table()
 
 # Autoplot automatically does PCA
 autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
   labs(title="Readership Clusters")
 ```
 
-**TODO: talk about clusters**
-
-## Predictions
+## Making Predictions
 
 ```{r}
 # TODO: cluster prediction (logistic regression? decision tree?)
@@ -264,6 +276,62 @@ training_data <- user_features_df %>%
 
 head(training_data, 15)
 ```
+
+## Results and Discussion
+
+Let's try to qualitatively summarize our clusters:
+
+  1. Rates average 4 in all genres but doesn't read realistic fiction
+  2. Rates average 4 in all genres
+  3. Rates average 3-4 in all genres but dislikes SF and doesn't read horror
+  4. Rates average 4.5-5 in all genres
+  5. Rates average 3.5 in all genres 
+  6. Rates average 3 all genres
+
+Observing the graph of clusters, groups 2, 4, 5, and 6 appear to be located
+close to each other. Among the clusters, groups 1, 3, and 6 show the
+largest amounts of variation within their clusters while groups
+2, 4, and 5 are tightly clustered.
+
+The close locations of groups 2, 4, 5, and 6 mean that the user
+ratings in these groups are harder to distinguish from each other which
+makes sense as these are all groups that are similar to each other in that they have
+users who have constant average ratings across all genres.
+
+Observing group 6, both its large variation
+and slight intersection into group 5 seem to indicate that while the 
+average ratings are around 3, there are probably a substantial amount of users
+within the group that rate very low, dragging the averages down.
+
+Group 3 is also an interesting case. The cluster has large variation and a
+somewhat specific qualitative description. Moreover, informal observation of the
+cluster graph seems to show smaller clusters within this group as well. This seems to indicate
+that while the users in this group generally have the qualitative characteristics as
+described above in common, there are still sub-groups within this cluster
+that have varying defining characteristics from each other.
+
+Group 1 is another cluster with a specific qualitative description. The variation
+within this cluster is somewhat high and the cluster is located far away from
+other the other groups. This seems to indicate that there truly is a common group
+of readers that do not read realistic fiction, but they also likely vary in their average
+ratings across other genres.
+
+**TODO: Write up predictions**
+
+While this project did manage some interesting results, there
+are still several areas of improvement. One issue is that by only
+working with the average genre ratings for each user, we lost
+information about variance for each genre per user. This means that
+certain users may end up in the same cluster based on similar average ratings
+but still rate books wildly differently because variation was not accounted for.
+
+Another area of improvement was potentially using a more advanced clustering algorithm.
+K-means clustering was not able to distinguish some of the smaller clusters in group 6,
+possibly due to large amount of users in other locations occupying the algorithm.
+As there were more data points densely packed in the area near groups 2 and 5, the centroids
+for K-means ended up gathering near there and ignoring smaller groups elsewhere.
+
+**TODO: Talk more on improvements**
 
 ## Conclusion
 
