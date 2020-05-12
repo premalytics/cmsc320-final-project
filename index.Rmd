@@ -348,3 +348,6 @@ for K-means ended up gathering near there and ignoring smaller groups elsewhere.
 **TODO: Write conclusion**
 
 ## References
+
+<div class="pixel"></div>
+<div class="holo"></div>
