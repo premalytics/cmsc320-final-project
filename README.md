@@ -2,13 +2,15 @@
 
 Analysis of Goodreads readership. Created for 2020 CMSC320 final project.
 
-## Getting Data
+## Setup
+
+### Getting Data
 After cloning project:
 
     git submodule init
     git submodule update
 
-## Build
+### Build
   - Install Rmarkdown: `install.packages("rmarkdown")`
   - Open project in Rstudio and build with `Ctrl-Shift-B`
   
