@@ -22,6 +22,8 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
+<script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
 
 <style type="text/css">code{white-space: pre;}</style>
 <style type="text/css">
@@ -292,35 +294,32 @@ $(document).ready(function () {
 </div>
 
 
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
 <p><a href="https://www.goodreads.com">Goodreads</a> is a popular social cataloging website where users can search, track, and rate books. The site has over 20 million users and 50 million book reviews, making it a very large source of readership data.</p>
 <div class="figure">
 <img src="images/screenshot_01.png" alt="Goodreads site" />
 <p class="caption">Goodreads site</p>
 </div>
-<p>With so many users and reviews, an interesting experiment would be to see if we can generalize the readership of Goodreads based on how users rate books from certain genres. From this, we would be able to see if, for instance, there is a large group of sci-fi fans or a large group of romance and YA fanatics that also hate horror.</p>
+<p>With so many users and reviews, an interesting experiment would be to see if we can characterize the readership of Goodreads using user ratings. Specifically we are interested in answering the question, “Based on user ratings data, can we find common groups of users by how they rate certain genres of books?” With such information, we would be able to see if, for instance, there is a large group of sci-fi fans or a large group of romance and YA fanatics that also happen to hate horror.</p>
+<blockquote>
+<p>“Based on user ratings data, can we find common groups of users by how they rate certain genres of books?”</p>
+</blockquote>
 <p>In this project, we demonstrate the process of doing this kind of analysis from the ground up by leveraging and manipulating a subset of Goodreads’ data using the Goodbooks-10k dataset <span class="citation">(Zajac 2017)</span> and performing statistical and cluster analysis to try to try to paint a generalized picture of the site’s readership.</p>
-<div id="loading-and-pre-processing-data" class="section level2">
-<h2>Loading and Pre-processing Data</h2>
-<p>Goodbooks-10k consists of several CSV files containing information about the top 10,000 most rated books on Goodreads, including book metadata, tags, and relevant user ratings.</p>
+</div>
+<div id="understanding-and-pre-processing-the-data" class="section level2">
+<h2>Understanding and Pre-processing the Data</h2>
+<p>The Goodbooks-10k data obtained from GitHub consists of several CSV files with information about the top 10,000 most rated books on Goodreads, including book metadata, tags, and relevant user ratings.</p>
 <p>The CSV files can be easily loaded using R’s <code>read.csv</code> method. For example, here we load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and each book attribute as a column.</p>
 <pre class="r"><code>books_df &lt;- read.csv(&quot;./goodbooks-10k/books.csv&quot;) %&gt;%
   as_tibble()
-head(books_df)</code></pre>
-<pre><code>## # A tibble: 6 x 23
-##   book_id goodreads_book_~ best_book_id work_id books_count isbn   isbn13
-##     &lt;int&gt;            &lt;int&gt;        &lt;int&gt;   &lt;int&gt;       &lt;int&gt; &lt;fct&gt;   &lt;dbl&gt;
-## 1       1          2767052      2767052  2.79e6         272 4390~ 9.78e12
-## 2       2                3            3  4.64e6         491 4395~ 9.78e12
-## 3       3            41865        41865  3.21e6         226 3160~ 9.78e12
-## 4       4             2657         2657  3.28e6         487 6112~ 9.78e12
-## 5       5             4671         4671  2.45e5        1356 7432~ 9.78e12
-## 6       6         11870085     11870085  1.68e7         226 5254~ 9.78e12
-## # ... with 16 more variables: authors &lt;fct&gt;, original_publication_year &lt;dbl&gt;,
-## #   original_title &lt;fct&gt;, title &lt;fct&gt;, language_code &lt;fct&gt;,
-## #   average_rating &lt;dbl&gt;, ratings_count &lt;int&gt;, work_ratings_count &lt;int&gt;,
-## #   work_text_reviews_count &lt;int&gt;, ratings_1 &lt;int&gt;, ratings_2 &lt;int&gt;,
-## #   ratings_3 &lt;int&gt;, ratings_4 &lt;int&gt;, ratings_5 &lt;int&gt;, image_url &lt;fct&gt;,
-## #   small_image_url &lt;fct&gt;</code></pre>
+head(books_df) %&gt;%
+  rmarkdown::paged_table()</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["book_id"],"name":[1],"type":["int"],"align":["right"]},{"label":["goodreads_book_id"],"name":[2],"type":["int"],"align":["right"]},{"label":["best_book_id"],"name":[3],"type":["int"],"align":["right"]},{"label":["work_id"],"name":[4],"type":["int"],"align":["right"]},{"label":["books_count"],"name":[5],"type":["int"],"align":["right"]},{"label":["isbn"],"name":[6],"type":["fctr"],"align":["left"]},{"label":["isbn13"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["authors"],"name":[8],"type":["fctr"],"align":["left"]},{"label":["original_publication_year"],"name":[9],"type":["dbl"],"align":["right"]},{"label":["original_title"],"name":[10],"type":["fctr"],"align":["left"]},{"label":["title"],"name":[11],"type":["fctr"],"align":["left"]},{"label":["language_code"],"name":[12],"type":["fctr"],"align":["left"]},{"label":["average_rating"],"name":[13],"type":["dbl"],"align":["right"]},{"label":["ratings_count"],"name":[14],"type":["int"],"align":["right"]},{"label":["work_ratings_count"],"name":[15],"type":["int"],"align":["right"]},{"label":["work_text_reviews_count"],"name":[16],"type":["int"],"align":["right"]},{"label":["ratings_1"],"name":[17],"type":["int"],"align":["right"]},{"label":["ratings_2"],"name":[18],"type":["int"],"align":["right"]},{"label":["ratings_3"],"name":[19],"type":["int"],"align":["right"]},{"label":["ratings_4"],"name":[20],"type":["int"],"align":["right"]},{"label":["ratings_5"],"name":[21],"type":["int"],"align":["right"]},{"label":["image_url"],"name":[22],"type":["fctr"],"align":["left"]},{"label":["small_image_url"],"name":[23],"type":["fctr"],"align":["left"]}],"data":[{"1":"1","2":"2767052","3":"2767052","4":"2792775","5":"272","6":"439023483","7":"9.780439e+12","8":"Suzanne Collins","9":"2008","10":"The Hunger Games","11":"The Hunger Games (The Hunger Games, #1)","12":"eng","13":"4.34","14":"4780653","15":"4942365","16":"155254","17":"66715","18":"127936","19":"560092","20":"1481305","21":"2706317","22":"https://images.gr-assets.com/books/1447303603m/2767052.jpg","23":"https://images.gr-assets.com/books/1447303603s/2767052.jpg"},{"1":"2","2":"3","3":"3","4":"4640799","5":"491","6":"439554934","7":"9.780440e+12","8":"J.K. Rowling, Mary GrandPrÃ©","9":"1997","10":"Harry Potter and the Philosopher's Stone","11":"Harry Potter and the Sorcerer's Stone (Harry Potter, #1)","12":"eng","13":"4.44","14":"4602479","15":"4800065","16":"75867","17":"75504","18":"101676","19":"455024","20":"1156318","21":"3011543","22":"https://images.gr-assets.com/books/1474154022m/3.jpg","23":"https://images.gr-assets.com/books/1474154022s/3.jpg"},{"1":"3","2":"41865","3":"41865","4":"3212258","5":"226","6":"316015849","7":"9.780316e+12","8":"Stephenie Meyer","9":"2005","10":"Twilight","11":"Twilight (Twilight, #1)","12":"en-US","13":"3.57","14":"3866839","15":"3916824","16":"95009","17":"456191","18":"436802","19":"793319","20":"875073","21":"1355439","22":"https://images.gr-assets.com/books/1361039443m/41865.jpg","23":"https://images.gr-assets.com/books/1361039443s/41865.jpg"},{"1":"4","2":"2657","3":"2657","4":"3275794","5":"487","6":"61120081","7":"9.780061e+12","8":"Harper Lee","9":"1960","10":"To Kill a Mockingbird","11":"To Kill a Mockingbird","12":"eng","13":"4.25","14":"3198671","15":"3340896","16":"72586","17":"60427","18":"117415","19":"446835","20":"1001952","21":"1714267","22":"https://images.gr-assets.com/books/1361975680m/2657.jpg","23":"https://images.gr-assets.com/books/1361975680s/2657.jpg"},{"1":"5","2":"4671","3":"4671","4":"245494","5":"1356","6":"743273567","7":"9.780743e+12","8":"F. Scott Fitzgerald","9":"1925","10":"The Great Gatsby","11":"The Great Gatsby","12":"eng","13":"3.89","14":"2683664","15":"2773745","16":"51992","17":"86236","18":"197621","19":"606158","20":"936012","21":"947718","22":"https://images.gr-assets.com/books/1490528560m/4671.jpg","23":"https://images.gr-assets.com/books/1490528560s/4671.jpg"},{"1":"6","2":"11870085","3":"11870085","4":"16827462","5":"226","6":"525478817","7":"9.780525e+12","8":"John Green","9":"2012","10":"The Fault in Our Stars","11":"The Fault in Our Stars","12":"eng","13":"4.26","14":"2346404","15":"2478609","16":"140739","17":"47994","18":"92723","19":"327550","20":"698471","21":"1311871","22":"https://images.gr-assets.com/books/1360206420m/11870085.jpg","23":"https://images.gr-assets.com/books/1360206420s/11870085.jpg"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 <p>Let’s load the rest of our data as well.</p>
 <pre class="r"><code>ratings_df &lt;- read.csv(&quot;./goodbooks-10k/ratings.csv&quot;)%&gt;%
   as_tibble()
@@ -342,19 +341,14 @@ book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)%&gt;%
   )) %&gt;%
   as_tibble()
 
-tags_df</code></pre>
-<pre><code>## # A tibble: 8 x 2
-##   tag_id tag_name         
-##    &lt;int&gt; &lt;fct&gt;            
-## 1  11305 fantasy          
-## 2  14821 horror           
-## 3  20939 mystery          
-## 4  25438 realistic-fiction
-## 5  26138 romance          
-## 6  26837 science-fiction  
-## 7  30358 thriller         
-## 8  33114 young-adult</code></pre>
-<p>However, this tag information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by <strong>joining</strong> data across different data frames through a common attribute. Here, we construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>. From there, we then link <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>. From the resulting data frame, we can see that <code>tag_name</code> does indeed describe the genre of books it is associated with.</p>
+tags_df %&gt;%
+  rmarkdown::paged_table()</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["tag_id"],"name":[1],"type":["int"],"align":["right"]},{"label":["tag_name"],"name":[2],"type":["fctr"],"align":["left"]}],"data":[{"1":"11305","2":"fantasy"},{"1":"14821","2":"horror"},{"1":"20939","2":"mystery"},{"1":"25438","2":"realistic-fiction"},{"1":"26138","2":"romance"},{"1":"26837","2":"science-fiction"},{"1":"30358","2":"thriller"},{"1":"33114","2":"young-adult"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p>However, this tag information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by <strong>joining</strong> data across different data frames through a common attribute. We construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>. From there, we then link <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>.</p>
 <pre class="r"><code>book_genres_df &lt;- books_df %&gt;%
   inner_join(book_tags_df, by=&quot;goodreads_book_id&quot;) %&gt;%
   inner_join(tags_df, by=&quot;tag_id&quot;) %&gt;%
@@ -362,29 +356,16 @@ tags_df</code></pre>
 
 book_genres_df %&gt;%
   select(&quot;title&quot;, &quot;tag_name&quot;) %&gt;%
-  head(15)</code></pre>
-<pre><code>## # A tibble: 15 x 2
-##    title                                                    tag_name         
-##    &lt;fct&gt;                                                    &lt;fct&gt;            
-##  1 The Hunger Games (The Hunger Games, #1)                  young-adult      
-##  2 The Hunger Games (The Hunger Games, #1)                  fantasy          
-##  3 The Hunger Games (The Hunger Games, #1)                  science-fiction  
-##  4 The Hunger Games (The Hunger Games, #1)                  romance          
-##  5 The Hunger Games (The Hunger Games, #1)                  thriller         
-##  6 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1) fantasy          
-##  7 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1) young-adult      
-##  8 Harry Potter and the Sorcerer&#39;s Stone (Harry Potter, #1) mystery          
-##  9 Twilight (Twilight, #1)                                  young-adult      
-## 10 Twilight (Twilight, #1)                                  fantasy          
-## 11 Twilight (Twilight, #1)                                  horror           
-## 12 Twilight (Twilight, #1)                                  science-fiction  
-## 13 To Kill a Mockingbird                                    young-adult      
-## 14 To Kill a Mockingbird                                    realistic-fiction
-## 15 To Kill a Mockingbird                                    mystery</code></pre>
+  head(15) %&gt;%
+  rmarkdown::paged_table()</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["title"],"name":[1],"type":["fctr"],"align":["left"]},{"label":["tag_name"],"name":[2],"type":["fctr"],"align":["left"]}],"data":[{"1":"The Hunger Games (The Hunger Games, #1)","2":"young-adult"},{"1":"The Hunger Games (The Hunger Games, #1)","2":"fantasy"},{"1":"The Hunger Games (The Hunger Games, #1)","2":"science-fiction"},{"1":"The Hunger Games (The Hunger Games, #1)","2":"romance"},{"1":"The Hunger Games (The Hunger Games, #1)","2":"thriller"},{"1":"Harry Potter and the Sorcerer's Stone (Harry Potter, #1)","2":"fantasy"},{"1":"Harry Potter and the Sorcerer's Stone (Harry Potter, #1)","2":"young-adult"},{"1":"Harry Potter and the Sorcerer's Stone (Harry Potter, #1)","2":"mystery"},{"1":"Twilight (Twilight, #1)","2":"young-adult"},{"1":"Twilight (Twilight, #1)","2":"fantasy"},{"1":"Twilight (Twilight, #1)","2":"horror"},{"1":"Twilight (Twilight, #1)","2":"science-fiction"},{"1":"To Kill a Mockingbird","2":"young-adult"},{"1":"To Kill a Mockingbird","2":"realistic-fiction"},{"1":"To Kill a Mockingbird","2":"mystery"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<p>From the resulting data frame, we can see that <code>tag_name</code> does indeed describe the genre of books it is associated with.</p>
 <p>Let’s build another pipeline to join with <code>ratings_df</code> and link users with the genres of the books they rated. We can do a summary on the data frame from there to end up with a table of mean ratings in each genre of interest for all users. These ratings range from 1 to 5, with a mean rating of -5 to mark genres with no rating.</p>
-<pre class="r"><code># TODO: What should we replace na with??
-
-# Note: This takes awhile to run...
+<pre class="r"><code># Note: This takes awhile to run...
 
 user_features_raw_df &lt;- ratings_df %&gt;%
   inner_join(book_genres_df, by=&quot;book_id&quot;) %&gt;%
@@ -400,29 +381,17 @@ user_features_df &lt;- user_features_raw_df %&gt;%
 # Convert column names to snake_case
 colnames(user_features_df) = to_snake_case(colnames(user_features_df))
 
-head(user_features_df, 15)</code></pre>
-<pre><code>## # A tibble: 15 x 8
-##    fantasy horror mystery realistic_ficti~ romance science_fiction thriller
-##      &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;   &lt;dbl&gt;           &lt;dbl&gt;    &lt;dbl&gt;
-##  1    3.55   3.29    3.4              3.51    3.45            3.14     3.4 
-##  2    4.85   5       4.9              4.38    4.12            4.75     4.67
-##  3    1.45   1.5     1.24             2       1.76            1.17     1.13
-##  4    3.90   3.59    3.55             3.65    3.44            3.54     3.18
-##  5    4.11   4.03    4.03             3.95    3.93            4.11     4   
-##  6    4.2    4.25    4.14             4.29    4.43            4.17     4.25
-##  7    3.79   3.78    3.76             4       3.51            3.76     3.6 
-##  8    4.09   3.95    3.81             3.25    3.17            4.42     3.4 
-##  9    3.66   3.67    3.25             3.37    3.52            3.58     3.03
-## 10    4.02   3.88    3.92             3.86    3.76            3.89     3.96
-## 11    3.63   3.69    3.42             3.59    3.44            3.4      3.69
-## 12    3.54   3.38    3.85             3.86    3.56            3.81     3.93
-## 13    3.64   4       4.33             4.29    4.11            4        4.4 
-## 14    3.61   3.6     3.6              3.08    3.32            3.66     3.31
-## 15    4.26   4.45    4                4.35    4.31            4.33     4.08
-## # ... with 1 more variable: young_adult &lt;dbl&gt;</code></pre>
+head(user_features_df, 15) %&gt;%
+  mutate_all(round, 2) %&gt;%
+  rmarkdown::paged_table()</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["fantasy"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["horror"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["mystery"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["realistic_fiction"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["romance"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["science_fiction"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["thriller"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["young_adult"],"name":[8],"type":["dbl"],"align":["right"]}],"data":[{"1":"3.55","2":"3.29","3":"3.40","4":"3.51","5":"3.45","6":"3.14","7":"3.40","8":"3.68"},{"1":"4.85","2":"5.00","3":"4.90","4":"4.38","5":"4.12","6":"4.75","7":"4.67","8":"4.76"},{"1":"1.45","2":"1.50","3":"1.24","4":"2.00","5":"1.76","6":"1.17","7":"1.13","8":"1.83"},{"1":"3.90","2":"3.59","3":"3.55","4":"3.65","5":"3.44","6":"3.54","7":"3.18","8":"4.08"},{"1":"4.11","2":"4.03","3":"4.03","4":"3.95","5":"3.93","6":"4.11","7":"4.00","8":"3.95"},{"1":"4.20","2":"4.25","3":"4.14","4":"4.29","5":"4.43","6":"4.17","7":"4.25","8":"4.42"},{"1":"3.79","2":"3.78","3":"3.76","4":"4.00","5":"3.51","6":"3.76","7":"3.60","8":"3.88"},{"1":"4.09","2":"3.95","3":"3.81","4":"3.25","5":"3.17","6":"4.42","7":"3.40","8":"3.50"},{"1":"3.66","2":"3.67","3":"3.25","4":"3.37","5":"3.52","6":"3.58","7":"3.03","8":"3.63"},{"1":"4.02","2":"3.88","3":"3.92","4":"3.86","5":"3.76","6":"3.89","7":"3.96","8":"4.07"},{"1":"3.63","2":"3.69","3":"3.42","4":"3.59","5":"3.44","6":"3.40","7":"3.69","8":"3.93"},{"1":"3.54","2":"3.38","3":"3.85","4":"3.86","5":"3.56","6":"3.81","7":"3.93","8":"3.65"},{"1":"3.64","2":"4.00","3":"4.33","4":"4.29","5":"4.11","6":"4.00","7":"4.40","8":"4.24"},{"1":"3.61","2":"3.60","3":"3.60","4":"3.08","5":"3.32","6":"3.66","7":"3.31","8":"3.34"},{"1":"4.26","2":"4.45","3":"4.00","4":"4.35","5":"4.31","6":"4.33","7":"4.08","8":"4.38"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
 </div>
-<div id="data-visualization-and-analysis" class="section level2">
-<h2>Data Visualization and Analysis</h2>
+</div>
+<div id="visualization-and-analysis" class="section level2">
+<h2>Visualization and Analysis</h2>
 <p>Now that we have transformed the original data into a data frame of average genre ratings for all users, we can begin analyzing users based on genre ratings.</p>
 <p>One way to better understand data in general is through visualization. For example, if we want to see where the readership lies on ratings for young adult versus fantasy, we can do so by plotting the average ratings from both genres on a 2D scatterplot.</p>
 <pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
@@ -494,32 +463,35 @@ ggplot(mapping=aes(x=k_range, y=sil)) +
 <pre class="r"><code>set.seed(320)
 
 kmeans_res &lt;- kmeans(user_features_df, 6)
-kmeans_res$centers</code></pre>
-<pre><code>##    fantasy    horror  mystery realistic_fiction  romance science_fiction
-## 1 4.082210  4.058811 4.089536         -5.000000 4.032686        3.992722
-## 2 4.069565  3.952256 4.034179          3.963205 3.984413        4.037278
-## 3 3.535047 -5.000000 3.991061          3.883914 3.959537        1.899152
-## 4 4.574821  4.527793 4.562151          4.475765 4.517483        4.562859
-## 5 3.617038  3.454431 3.579493          3.538471 3.536758        3.567962
-## 6 3.113330  2.955288 3.112006          3.132536 3.098398        2.590623
-##   thriller young_adult
-## 1 3.995147    4.029354
-## 2 3.992261    4.067606
-## 3 3.133296    4.092793
-## 4 4.551805    4.556903
-## 5 3.527587    3.626548
-## 6 2.693218    3.149608</code></pre>
+kmeans_res$centers %&gt;%
+  as_tibble() %&gt;%
+  mutate_all(round, 2) %&gt;%
+  rmarkdown::paged_table()</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["fantasy"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["horror"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["mystery"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["realistic_fiction"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["romance"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["science_fiction"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["thriller"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["young_adult"],"name":[8],"type":["dbl"],"align":["right"]}],"data":[{"1":"4.08","2":"4.06","3":"4.09","4":"-5.00","5":"4.03","6":"3.99","7":"4.00","8":"4.03"},{"1":"4.07","2":"3.95","3":"4.03","4":"3.96","5":"3.98","6":"4.04","7":"3.99","8":"4.07"},{"1":"3.54","2":"-5.00","3":"3.99","4":"3.88","5":"3.96","6":"1.90","7":"3.13","8":"4.09"},{"1":"4.57","2":"4.53","3":"4.56","4":"4.48","5":"4.52","6":"4.56","7":"4.55","8":"4.56"},{"1":"3.62","2":"3.45","3":"3.58","4":"3.54","5":"3.54","6":"3.57","7":"3.53","8":"3.63"},{"1":"3.11","2":"2.96","3":"3.11","4":"3.13","5":"3.10","6":"2.59","7":"2.69","8":"3.15"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
 <pre class="r"><code># Autoplot automatically does PCA
 autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
   labs(title=&quot;Readership Clusters&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p><strong>TODO: talk about clusters</strong></p>
 </div>
 </div>
-<div id="predictions" class="section level2">
-<h2>Predictions</h2>
+<div id="making-predictions" class="section level2">
+<h2>Making Predictions</h2>
 <pre class="r"><code># TODO: cluster prediction (logistic regression? decision tree?)
 
+# PCA
+pca_res &lt;- prcomp(data, center=TRUE, scale.=TRUE)
+plot_data &lt;- pca_res$x[,1:2] %&gt;%
+  as_tibble() %&gt;%
+  mutate(cluster=factor(kmeans_res$cluster))
+
+ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+  geom_point()</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<pre class="r"><code># Set up training data for cluster prediction
 training_data &lt;- user_features_df %&gt;%
   mutate(cluster=kmeans_res$cluster)
 
@@ -544,12 +516,41 @@ head(training_data, 15)</code></pre>
 ## 15    4.26   4.45    4                4.35    4.31            4.33     4.08
 ## # ... with 2 more variables: young_adult &lt;dbl&gt;, cluster &lt;int&gt;</code></pre>
 </div>
+<div id="results-and-discussion" class="section level2">
+<h2>Results and Discussion</h2>
+<p>Let’s try to qualitatively summarize our clusters:</p>
+<ol style="list-style-type: decimal">
+<li>Rates average 4 in all genres but doesn’t read realistic fiction</li>
+<li>Rates average 4 in all genres</li>
+<li>Rates average 3-4 in all genres but dislikes SF and doesn’t read horror</li>
+<li>Rates average 4.5-5 in all genres</li>
+<li>Rates average 3.5 in all genres</li>
+<li>Rates average 3 all genres</li>
+</ol>
+<p>Observing the graph of clusters, groups 2, 4, 5, and 6 appear to be located close to each other. Among the clusters, groups 1, 3, and 6 show the largest amounts of variation within their clusters while groups 2, 4, and 5 are tightly clustered.</p>
+<p>The close locations of groups 2, 4, 5, and 6 mean that the user ratings in these groups are harder to distinguish from each other which makes sense as these are all groups that are similar to each other in that they have users who have constant average ratings across all genres.</p>
+<p>Observing group 6, both its large variation and slight intersection into group 5 seem to indicate that while the average ratings are around 3, there are probably a substantial amount of users within the group that rate very low, dragging the averages down.</p>
+<p>Group 3 is also an interesting case. The cluster has large variation and a somewhat specific qualitative description. Moreover, informal observation of the cluster graph seems to show smaller clusters within this group as well. This seems to indicate that while the users in this group generally have the qualitative characteristics as described above in common, there are still sub-groups within this cluster that have varying defining characteristics from each other.</p>
+<p>Group 1 is another cluster with a specific qualitative description. The variation within this cluster is somewhat high and the cluster is located far away from other the other groups. This seems to indicate that there truly is a common group of readers that do not read realistic fiction, but they also likely vary in their average ratings across other genres.</p>
+<p><strong>TODO: Write up predictions</strong></p>
+<p>While we were able to successfully cluster users in this project, there are still several potential areas for improvement. One issue was that by only working with the average genre ratings for each user, we lost information about the variance of ratings within each genre per user. This means that certain users may have ended up in the same cluster because they had similar average ratings but still rate books differently in reality because the variation in how they rate was not accounted for.</p>
+<p>Another area that could have been improved was our clustering algorithm. K-means clustering was not able to find some of the smaller clusters in group 6, possibly due to a large amount of users in other locations which ended up occupying the algorithm. Since there were more data points densely packed in the area near groups 2 and 5, the centroids for K-means ended up gathering near there and ignoring smaller clusters elsewhere.</p>
+<p><strong>TODO: Talk more on improvements</strong></p>
+</div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p><strong>TODO: Write conclusion</strong></p>
+<p>In this project, we demonstrated how data from Goodreads could be used to find common groups of users among the site’s readership. We were able to do this through a combination of data manipulation with pipelines and statistical analyses with K-means clustering and PCA.</p>
+<p>These clusterings revealed some insights, such as the existence of a large group of users that do not read realistic fiction and a large group of users that have little interest in SF and horror. While our clustering was successful, there are still several areas of improvement we could have addressed for characterizing users, such as accounting for rating variation per user and the use of more advanced clustering algorithms.</p>
+<p>Clustering a site’s userbase is a problem that extends beyond Goodreads. In general, being able to find natural clusterings of users is both useful and powerful in that it allows for a large number of people to be bucketed into human-understandable categories. Knowing these clusters can let platforms gain a better sense of their userbase and allow them to better target content and appropriately address their communities.</p>
 </div>
-<div id="references" class="section level2 unnumbered">
+<div id="references" class="section level2">
 <h2>References</h2>
+<div class="pixel">
+
+</div>
+<div class="holo">
+
+</div>
 <div id="refs" class="references">
 <div id="ref-kmeansUCR">
 <p>Boehmke, Bradley. n.d. “K-Means Cluster Analysis.” <em>UC Business Analytics R Programming Guide</em>.</p>

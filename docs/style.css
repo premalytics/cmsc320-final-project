@@ -1,7 +1,23 @@
+body {
+	position: relative;
+}
+
 p {
 	font-size: 1.5em;
-	margin-top: 2em;
-	margin-bottom: 2em;
+	padding-top: 0.5em;
+	padding-bottom: 0.5em;
+}
+
+h1,h2,h3,h4,h5,h6 {
+	padding-top: 0.5em;
+	padding-bottom: 0.5em;
+}
+
+ul:not(.nav) {
+	font-size: 1.5em;
+}
+ol:not(.nav) {
+	font-size: 1.5em;
 }
 
 .container-fluid {
@@ -16,4 +32,24 @@ p {
 	text-align: center;
 	font-size: 1.2em;
 	font-style: italic;
+}
+
+.pixel {
+	position: fixed;
+	background-color: magenta;
+	left: 145px;
+	bottom: 511px;
+	width: 1px;
+	height: 1px;
+}
+
+.holo {
+	background-image: url("images/holo.png");
+	background-size: contain;
+	position: absolute;
+	bottom: 0px;
+	left: 0px;
+	width: 150px;
+	height: 150px;
+	opacity: 0.5;
 }
