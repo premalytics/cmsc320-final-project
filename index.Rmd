@@ -10,36 +10,39 @@ library("broom")
 library("snakecase")
 library("ggfortify")
 library("cluster")
-library("randomForest")
-library("e1071")
+library("randomForest")	
+library("e1071")	
 library("caret")
 ```
 
 ## Introduction
 
-[Goodreads](https://www.goodreads.com) is a popular social cataloging website where users can search, track, and rate books. The site has
-over 20 million users and 50 million book reviews, making it a very large source of readership data.
+[Goodreads](https://www.goodreads.com) is a popular social cataloging website where users can search, track, 
+and rate books. The site also offers a variety of recommendation services that provide users a way to find 
+books relevant to their reading history. Since its foundation in 2006, the site's userbase has grown to 20 million 
+users with over 50 million book reviews, making it a very large [source of readership data](https://github.com/zygmuntz/goodbooks-10k).
 
 ![Goodreads site](./images/screenshot_01.png)
 
 
 With so many users and reviews, an interesting experiment would be to see if
-we can characterize the readership of Goodreads using user ratings.
+we can characterize the readership of Goodreads based on user ratings.
 Specifically we are interested in answering the question,
 "Based on user ratings data, can we find common groups of users by how they rate certain genres of books?"
 With such information, we would be able to see if, for instance, there is
-a large group of sci-fi fans or a large group of romance and YA fanatics that
+a large group of sci-fi fans or a large group of romance and young adult fanatics that
 also happen to hate horror.
 
 > "Based on user ratings data, can we find common groups of users by how they rate certain genres of books?"
 
 In this project, we demonstrate the process of doing this kind of analysis from the ground up by leveraging and manipulating
-a subset of Goodreads' data using the Goodbooks-10k dataset [@goodbooks2017] and performing
-statistical and cluster analysis to try to try to paint a generalized picture of the site's readership.
+a subset of Goodreads' data using the [Goodbooks-10k dataset](https://github.com/zygmuntz/goodbooks-10k) [@goodbooks2017] and performing
+statistical and [cluster analysis](https://www.statisticssolutions.com/directory-of-statistical-analyses-cluster-analysis/) to try to try 
+to paint a generalized picture of the site's readership.
 
 ## Understanding and Pre-processing the Data
 
-The Goodbooks-10k data obtained from GitHub consists of several CSV files with information about the top 10,000 most rated
+The Goodbooks-10k data obtained from [GitHub](https://github.com/zygmuntz/goodbooks-10k) consists of several CSV files with information about the top 10,000 most rated
 books on Goodreads, including book metadata, tags, and relevant user ratings.
 
 The CSV files can be easily loaded using R's `read.csv` method. For example, here we load and display
@@ -66,8 +69,8 @@ book_tags_df <- read.csv("./goodbooks-10k/book_tags.csv")%>%
 ```
 
 With our data loaded, we can begin to do some data manipulation. Since we are interested
-in analyzing various genres, let's start by narrowing down `tags_df` with
-the genre tags we are interested in. We can do this using a **pipeline**
+in analyzing various genres, let's start by narrowing down the tags dataframe, `tags_df`, with
+the genre tags we are interested in. We can do this using a [**pipeline**](https://cfss.uchicago.edu/notes/pipes/)
 as shown below.
 
 ```{r}
@@ -90,11 +93,11 @@ tags_df %>%
 
 However, this tag information is not very helpful by itself. We
 want to be able to use it in conjunction with the other data
-we have. One way to accomplish this is by **joining** data across
+we have. One way to accomplish this is by [**joining**](http://www.datasciencemadesimple.com/join-in-r-merge-in-r/) data across
 different data frames through a common attribute. We construct a pipeline
 to link data from `books_df` and `book_tags_df` through the shared
 attribute, `goodreads_book_id`. From there, we then link `book_tags_df` and `tags_df`
-through `tag_id`.
+through `tag_id`, creating a new dataframe with an entry for each book's genre tag.
 
 ```{r}
 book_genres_df <- books_df %>%
@@ -111,7 +114,8 @@ book_genres_df %>%
 From the resulting data frame, we can see that `tag_name` does indeed describe
 the genre of books it is associated with.
 
-Let's build another pipeline to join with `ratings_df` and link users
+In order to answer our question, we need to collate data on how users review books from certain genres. 
+To do so, let's build another pipeline to join with `ratings_df` and link users
 with the genres of the books they rated. We can do a summary on the data frame
 from there to end up with a table of mean ratings in each genre of interest
 for all users. These ratings range from 1 to 5, with a mean rating of -5 to mark
@@ -151,7 +155,10 @@ ratings for young adult versus fantasy, we can do so by plotting the average rat
 from both genres on a 2D scatterplot.
 
 ```{r, fig.align='center'}
-ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
+ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) + 
+# If you don't want to see user averages for users who have not rated books from either genre, uncomment the next two lines
+#  scale_x_continuous(limits = c(0, 5)) + 
+#  scale_y_continuous(limits = c(0, 5)) + 
   geom_point() +
   labs(
     title="User Average Ratings for Young Adult Versus Fantasy",
@@ -175,8 +182,8 @@ Furthermore, we are also interested in clustering our data. While we had done a 
 grouping by eye-balling the data above, ideally, there should be a way to more formally
 say which data points form a group with one another.
 
-The solution to both of these problems is found in two methods known as **K-means clustering**
-and **principal component analysis (PCA)**.
+The solution to both of these problems is found in two methods known as [**K-means clustering**](https://towardsdatascience.com/understanding-k-means-clustering-in-machine-learning-6a6e67336aa1)
+and [**principal component analysis (PCA)**](https://towardsdatascience.com/a-one-stop-shop-for-principal-component-analysis-5582fb7e0a9c).
 
 K-means clustering is a way to cluster, or group, data points. The algorithm designates
 K centroids representing the centers of their respective clusters. Each data point is assigned
@@ -185,7 +192,7 @@ between it and all the points in its cluster.
 
 ![K-means on iris flower species](images/kmeans_iris.png)
 
-Meanwhile, PCA is a way to reduce the dimensions in high-dimensional data while
+Meanwhile, principal component analysis (PCA) is a way to reduce the dimensions in high-dimensional data while
 still trying to preserve features from the original space. Roughly, PCA tries to find a set of linear
 transformations from the original data that prioritizes maximizing variance for each dimension of the transformed data.
 At the end, the first two dimensions of the transformed data will ideally encode enough of the variance from the original
@@ -252,7 +259,8 @@ ggplot(mapping=aes(x=k_range, y=sil)) +
 ```
 
 Observing both graphs, K = 6 appears to be a point where total SSE has begun to flatten but
-average silhouette is still somewhat high, making it a reasonable compromise for K. With K
+average silhouette is still somewhat high, making it a reasonable compromise for K. Above K = 6, the total SSE does decrease,
+but not significantly enough to warrant a corresponding decrease in average silhouette. With K
 in hand, we can run K-means clustering on the full data now and graph using PCA.
 
 ```{r, fig.align='center'}
@@ -277,8 +285,9 @@ ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
 
 ## Making Predictions
 
-Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we simply take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.
+Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.	
 
+<<<<<<< HEAD
 ```{r}
 set.seed(1234) #to make results/training data consistent and reproducible
 
@@ -294,28 +303,50 @@ training_data_pca$cluster <- training_data_ratings$cluster
 training_data_ratings %>%
   head(15) %>%
   rmarkdown::paged_table()
+=======
+>>>>>>> 1b4c4e41df0db6896e3b3bdb3c3f6f37fc4833f5
 
-training_data_pca %>%
-  head(15) %>%
+```{r}
+set.seed(1234)	
+# Set up training data for cluster prediction	
+training_data_ratings <- user_features_df %>%	
+  mutate(cluster=factor(kmeans_res$cluster)) %>%	
+  sample_n(5000) #otherwise we have way too much data, can also try < 10k	
+# Setting up training data for PCA anlaysis	
+training_data_pca <-  as.data.frame(predict(pca_res, training_data_ratings)) %>% as_tibble()	
+training_data_pca$cluster <- training_data_ratings$cluster	
+training_data_ratings %>%	
+  head(15) %>%	
+  rmarkdown::paged_table()	
+training_data_pca %>%	
+  head(15) %>%	
   rmarkdown::paged_table()
 ```
 
-### Random Forests
+### Random Forests	
 
+<<<<<<< HEAD
 Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **random forest**. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. Usually, at each "branch" of the tree, we choose one predictor/variable to determine the decision path the model will take next. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees. Here's a diagram to illustrate the entire process:
 ![Example Random Forest: We generate multiple decision trees, and based off of the predictions aggregate and choose majority prediction](images/random_forest.png)
 
 Now here's an example using R's randomForest package to train a randomForest model:
+=======
+Now that we've generated our training data set, we can begin training our own machine learning (ML) model. First, we'll take a look at a very popular tree-based model known as [**random forest**](https://towardsdatascience.com/understanding-random-forest-58381e0602d2). In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
+>>>>>>> 1b4c4e41df0db6896e3b3bdb3c3f6f37fc4833f5
 
-```{r}
-# Training classification on dataframe using randomForest (n = 200):
-rf_prediction <- randomForest(cluster ~ .,
-                              ntree=200,
-                              importance=TRUE,
-                              data=training_data_ratings)
-```
+```{r}	
+# Training classification on dataframe using randomForest (n = 200):	
+rf_prediction <- randomForest(cluster ~ .,	
+                              ntree=200,	
+                              importance=TRUE,	
+                              data=training_data_ratings)	
+```	
 
+<<<<<<< HEAD
 Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. Two main measures of predictor importance are Mean Decreased Error (MDE) which correlates to accuracy in predictions, and Mean Decrease Gini which helps determine important variables used in the actual splitting of decision trees. Note that these values are all for a categorical-based random forest model (our categories, remember, are the clusters generated before by k-means)
+=======
+Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. The importance of each predictor is judged by the **Mean Decrease in Accuracy**, which is calculated as the decrease in accuracy when the predictor is removed from the model, allowing us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first predictor were removed, it would result in the model making on average more misclassifications than the second.
+>>>>>>> 1b4c4e41df0db6896e3b3bdb3c3f6f37fc4833f5
 
 ```{r, fig.align='center'}
 variable_importance <- importance(rf_prediction)
@@ -333,7 +364,10 @@ rf_predictors_importance %>%
 
 From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users by reducing error in classifying.
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 1b4c4e41df0db6896e3b3bdb3c3f6f37fc4833f5
 ### Support Vector Machines
 
 As an additional example, we'll also show how to train using a **support vector machine** (SVM) multi-classification model
