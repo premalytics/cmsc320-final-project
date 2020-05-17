@@ -514,14 +514,15 @@ training_data_ratings %&gt;%
 {"columns":[{"label":["PC1"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["PC2"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["PC3"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["PC4"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["PC5"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["PC6"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["PC7"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["PC8"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["cluster"],"name":[9],"type":["fctr"],"align":["left"]}],"data":[{"1":"0.5432715","2":"0.06760501","3":"-0.26117119","4":"0.049408924","5":"0.35661962","6":"-0.0720484189","7":"-0.15743328","8":"0.209150837","9":"2"},{"1":"1.7124988","2":"-0.09532340","3":"-0.41587198","4":"0.001793298","5":"0.13933396","6":"0.0741115408","7":"0.12240584","8":"0.168393079","9":"4"},{"1":"-4.4858635","2":"0.29207600","3":"0.19098462","4":"1.319743745","5":"-1.31901999","6":"0.2895388994","7":"0.12493279","8":"0.002011214","9":"6"},{"1":"-2.1683099","2":"-0.07469882","3":"-0.06015029","4":"0.131769337","5":"0.01353766","6":"0.3659025899","7":"-0.07502277","8":"-0.238329350","9":"5"},{"1":"1.0042900","2":"0.07549336","3":"-0.19354034","4":"-0.444154133","5":"0.20624783","6":"0.2619933142","7":"0.37055970","8":"-0.025279148","9":"2"},{"1":"-1.7376314","2":"-0.46859041","3":"-0.33917834","4":"-0.062124867","5":"-0.08948850","6":"-0.0689205683","7":"0.23463564","8":"0.233711202","9":"5"},{"1":"0.5289511","2":"0.51379435","3":"-0.01537821","4":"-0.009720388","5":"0.24764651","6":"0.0582680245","7":"-0.29587416","8":"-0.057938315","9":"2"},{"1":"-1.1468758","2":"0.03331248","3":"-0.07732837","4":"-0.057802762","5":"0.02696398","6":"0.5232854352","7":"0.55128740","8":"0.637532659","9":"5"},{"1":"-2.5592775","2":"-0.31325136","3":"-0.47189964","4":"-0.327458115","5":"0.06364221","6":"0.0008810543","7":"0.07727219","8":"-0.222155851","9":"5"},{"1":"1.5987138","2":"0.11897876","3":"-0.21761659","4":"-0.244206519","5":"-0.04598309","6":"0.1092285365","7":"0.21672458","8":"-0.023056364","9":"2"},{"1":"2.1594241","2":"0.36319724","3":"0.42779839","4":"-0.032419488","5":"0.02760074","6":"0.2542841936","7":"-0.17024490","8":"-0.082556828","9":"4"},{"1":"0.4501249","2":"-0.12269423","3":"-0.28559652","4":"0.122082956","5":"-0.17601531","6":"0.0715410461","7":"0.22023329","8":"-0.121412455","9":"2"},{"1":"-1.9275514","2":"-0.07091472","3":"-0.48955500","4":"0.167066369","5":"-0.12405981","6":"-0.0504020783","7":"-0.03436655","8":"0.004469251","9":"5"},{"1":"-4.7187872","2":"0.20184691","3":"-0.44044534","4":"0.971369577","5":"0.35026165","6":"0.4968258379","7":"-0.15497733","8":"-0.632476016","9":"6"},{"1":"2.4385145","2":"0.01557281","3":"-0.36082437","4":"0.137893680","5":"0.02324007","6":"-0.0499055453","7":"0.17861266","8":"0.370130036","9":"4"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-<p>Now that we’ve generated our training data set, let’s begin training our own ML model! First, we’ll take a look at a very popular tree-based model known as <strong>Random Forest</strong>. In a regular Decision Tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With Random Forest, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.</p>
-<pre class="r"><code>#training classification on dataframe using randomForest (n = 200):
+<div id="random-forests" class="section level3">
+<h3>Random Forests</h3>
+<p>Now that we’ve generated our training data set, let’s begin training our own ML model! First, we’ll take a look at a very popular tree-based model known as <strong>random forest</strong>. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.</p>
+<pre class="r"><code># Training classification on dataframe using randomForest (n = 200):
 rf_prediction &lt;- randomForest(cluster ~ .,
                               ntree=200,
                               importance=TRUE,
-                              data=training_data_ratings) #naive training</code></pre>
-<p>Now that we’ve generated our randomForest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:</p>
-<p><strong>TODO: Talk about importance. How is it derived? How is it calculated?</strong></p>
+                              data=training_data_ratings)</code></pre>
+<p>Now that we’ve generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:</p>
 <pre class="r"><code>variable_importance &lt;- importance(rf_prediction)
 
 rf_predictors_importance &lt;- variable_importance %&gt;%
@@ -534,12 +535,17 @@ rf_predictors_importance %&gt;%
   coord_flip() +
   labs(title=&quot;Genres by Importance&quot;, y=&quot;Mean Decrease Accuracy&quot;, x=&quot;Genre&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>As an additional example, we’ll also show how to train using an SVM (support vector machine) multi-classification model as an additional factor in our experiment below. The way SVM works, is to actually <strong>increase dimension</strong> as compared to PCA. Basically, we want to create a hyperplane - some n-dimensional vector that can effectively separate between multiple classes in the classification problem. As an example of how this work, consider a simple 2 group classification problem in 2D:</p>
+<p>From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users.</p>
+<p><strong>TODO: Talk about mean decrease accuracy and how it relates to importance?</strong></p>
+</div>
+<div id="support-vector-machines" class="section level3">
+<h3>Support Vector Machines</h3>
+<p>As an additional example, we’ll also show how to train using a <strong>support vector machine</strong> (SVM) multi-classification model as an additional factor in our experiment below. The way SVM works, is to actually <strong>increase dimension</strong> as compared to PCA. Basically, we want to create a hyperplane - some n-dimensional vector that can effectively separate between multiple classes in the classification problem. As an example of how this work, consider a simple 2 group classification problem in 2D:</p>
 <div class="figure">
 <img src="images/svm_example.png" alt="Example SVM: Moving from 2D coordinate space to 3D in order to better separate classification" />
 <p class="caption">Example SVM: Moving from 2D coordinate space to 3D in order to better separate classification</p>
 </div>
-<p>In the example above, the 2D plot is circular, meaning there is no easy, linear division between the red and blue points. However, if we extend to 3D (by letting <span class="math inline">\(z = x^2 + y^2\)</span>) we get a shape in 3D that we can divide using a plane. Notice that by translating this plane into 2D, we actually get a circle although in 3D it is “linear/planar”. The “support vectors” in SVM refer to the data points closest to the hyperplane, which are used to help determine the hyperplane itself. In the next example, we use the regular training data set to train our SVM model:</p>
+<p>In the example above, the 2D plot is circular, meaning there is no easy, linear division between the red and blue points. However, if we extend to 3D (by letting <span class="math inline">\(z = x^2 + y^2\)</span>) we get a shape in 3D that we can divide using a plane. Notice that by translating this plane into 2D, we actually get a circle although in 3D it is “linear/planar”. The “support vectors” in SVM refer to the data points closest to the hyperplane, which are used to help determine the hyperplane itself. In the next example, we use the ratings training data set to train our SVM model:</p>
 <pre class="r"><code>set.seed(1234)    # Setting seed for reproducibility
 
 n &lt;- nrow(training_data_ratings)  # Number of observations
@@ -548,14 +554,14 @@ split_index &lt;- sample(n, ntrain)   # Create a random index
 train_svm &lt;- training_data_ratings[split_index,]   # Create training set
 test_svm &lt;- training_data_ratings[-split_index,]   # Create test set
 
-svm_prediction &lt;- svm(cluster~.,
+svm_prediction &lt;- svm(cluster ~ .,
                       data=train_svm, 
                       method=&quot;C-classification&quot;,
                       kernal=&quot;radial&quot;, 
                       gamma=0.1,
                       cost=10) #coefficients determined w/ help from guide</code></pre>
 <p>Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we’ll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according to our previous random forest model) while keeping the others constant:</p>
-<p><strong>TODO: this needs to be explained</strong></p>
+<p><strong>TODO: this graph needs to be made more clear</strong></p>
 <pre class="r"><code># using plot() to visualize our hyperplane:
 plot(svm_prediction, train_svm, realistic_fiction ~ horror,
           slice=list(fantasy = 3, mystery = 3, young_adult = 3, romance = 3, science_fiction = 3, thriller = 3))</code></pre>
@@ -582,8 +588,9 @@ table(test_svm$cluster, pred_svm)</code></pre>
 ##   4 0.000000000 0.004081633 0.000000000 0.995918367 0.000000000 0.000000000
 ##   5 0.000000000 0.002222222 0.000000000 0.000000000 0.991111111 0.006666667
 ##   6 0.000000000 0.000000000 0.000000000 0.000000000 0.012048193 0.987951807</code></pre>
-<p>From previous we can see a table of our classifications, and can see how many were classified correctly with the SVM model and how many weren’t….</p>
-<p><strong>TODO: Run and Finish describing this information</strong></p>
+</div>
+<div id="evaluating-model-performance" class="section level3">
+<h3>Evaluating Model Performance</h3>
 <p>From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let’s analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we’ll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance.</p>
 <pre class="r"><code>set.seed(1234)
 
@@ -680,6 +687,7 @@ model_tab %&gt;%
          y = &quot;True positive rate&quot;)</code></pre>
 <p><strong>TODO: Write up results for ROC Curves graph</strong></p>
 </div>
+</div>
 <div id="results-and-discussion" class="section level2">
 <h2>Results and Discussion</h2>
 <p>Let’s try to qualitatively summarize our clusters:</p>
@@ -698,7 +706,8 @@ model_tab %&gt;%
 <p>Group 1 is another cluster with a specific qualitative description. The variation within this cluster is somewhat high and the cluster is located far away from other the other groups. This seems to indicate that there truly is a common group of readers that do not read realistic fiction, but they also likely vary in their average ratings across other genres.</p>
 <p><strong>TODO: Add more on predictions</strong></p>
 <p>Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most “important” predictors for classification seemed to be fantasy, young adult, and science fiction genre ratings.</p>
-<p><strong>TODO: Write up SVM</strong> <strong>TODO: Write up ROC, AUROC</strong></p>
+<p><strong>TODO: Write up SVM</strong></p>
+<p><strong>TODO: Write up ROC, AUROC</strong></p>
 <p>While we were able to successfully cluster users in this project, there are still several potential areas for improvement. One issue was that by only working with the average genre ratings for each user, we lost information about the variance of ratings within each genre per user. This means that certain users may have ended up in the same cluster because they had similar average ratings but still rate books differently in reality because the variation in how they rate was not accounted for.</p>
 <p>Another area that could have been improved was our clustering algorithm. K-means clustering was not able to find some of the smaller clusters in group 6, possibly due to a large amount of users in other locations which ended up occupying the algorithm. Since there were more data points densely packed in the area near groups 2 and 5, the centroids for K-means ended up gathering near there and ignoring smaller clusters elsewhere.</p>
 <p><strong>TODO: Talk more on improvements</strong></p>

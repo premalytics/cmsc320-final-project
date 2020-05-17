@@ -300,19 +300,19 @@ training_data_pca %>%
   rmarkdown::paged_table()
 ```
 
-Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **Random Forest**. In a regular Decision Tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With Random Forest, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
+### Random Forests
+
+Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **random forest**. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
 
 ```{r}
-#training classification on dataframe using randomForest (n = 200):
+# Training classification on dataframe using randomForest (n = 200):
 rf_prediction <- randomForest(cluster ~ .,
                               ntree=200,
                               importance=TRUE,
-                              data=training_data_ratings) #naive training
+                              data=training_data_ratings)
 ```
 
-Now that we've generated our randomForest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:
-
-**TODO: Talk about importance. How is it derived? How is it calculated?**
+Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:
 
 ```{r, fig.align='center'}
 variable_importance <- importance(rf_prediction)
@@ -328,11 +328,25 @@ rf_predictors_importance %>%
   labs(title="Genres by Importance", y="Mean Decrease Accuracy", x="Genre")
 ```
 
-As an additional example, we'll also show how to train using an SVM (support vector machine) multi-classification model as an additional factor in our experiment below. The way SVM works, is to actually **increase dimension** as compared to PCA. Basically, we want to create a hyperplane - some n-dimensional vector that can effectively separate between multiple classes in the classification problem. As an example of how this work, consider a simple 2 group classification problem in 2D:
+From the graph, it seems that ratings in certain genres such as realistic fiction and horror
+are able to better classify users.
+
+**TODO: Talk about mean decrease accuracy and how it relates to importance?**
+
+### Support Vector Machines
+
+As an additional example, we'll also show how to train using a **support vector machine** (SVM) multi-classification model
+as an additional factor in our experiment below. The way SVM works, is to actually **increase dimension** as compared to PCA.
+Basically, we want to create a hyperplane - some n-dimensional vector that can effectively separate between multiple classes
+in the classification problem. As an example of how this work, consider a simple 2 group classification problem in 2D:
 
 ![Example SVM: Moving from 2D coordinate space to 3D in order to better separate classification](images/svm_example.png)
 
-In the example above, the 2D plot is circular, meaning there is no easy, linear division between the red and blue points. However, if we extend to 3D (by letting $z = x^2 + y^2$) we get a shape in 3D that we can divide using a plane. Notice that by translating this plane into 2D, we actually get a circle although in 3D it is "linear/planar". The "support vectors" in SVM refer to the data points closest to the hyperplane, which are used to help determine the hyperplane itself. In the next example, we use the regular training data set to train our SVM model:
+In the example above, the 2D plot is circular, meaning there is no easy, linear division between the red and blue points.
+However, if we extend to 3D (by letting $z = x^2 + y^2$) we get a shape in 3D that we can divide using a plane. Notice
+that by translating this plane into 2D, we actually get a circle although in 3D it is "linear/planar". The "support vectors"
+in SVM refer to the data points closest to the hyperplane, which are used to help determine the hyperplane itself. In the next
+example, we use the ratings training data set to train our SVM model:
 
 ```{r}
 set.seed(1234)    # Setting seed for reproducibility
@@ -343,7 +357,7 @@ split_index <- sample(n, ntrain)   # Create a random index
 train_svm <- training_data_ratings[split_index,]   # Create training set
 test_svm <- training_data_ratings[-split_index,]   # Create test set
 
-svm_prediction <- svm(cluster~.,
+svm_prediction <- svm(cluster ~ .,
                       data=train_svm, 
                       method="C-classification",
                       kernal="radial", 
@@ -351,10 +365,11 @@ svm_prediction <- svm(cluster~.,
                       cost=10) #coefficients determined w/ help from guide
 ```
 
-Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we'll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according to our previous random forest model)
-while keeping the others constant:
+Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For
+this, we'll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according
+to our previous random forest model) while keeping the others constant:
 
-**TODO: this needs to be explained**
+**TODO: this graph needs to be made more clear**
 
 ```{r, fig.align='center'}
 # using plot() to visualize our hyperplane:
@@ -374,11 +389,13 @@ table(test_svm$cluster, pred_svm)
 prop.table(table(test_svm$cluster, pred_svm), 1)
 ```
 
-From previous we can see a table of our classifications, and can see how many were classified correctly with the SVM model and how many weren't....
+### Evaluating Model Performance
 
-**TODO: Run and Finish describing this information**
-
-From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we'll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance.  
+From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the
+cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now,
+let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how
+well our model fits the dataset. For the next section, we'll be analyzing our random forest model on the raw training data set,
+and comparing that to our PCA-created data set and see the differences in performance.  
 
 ```{r}
 set.seed(1234)
@@ -540,6 +557,7 @@ Looking at our predictions, we got some very interesting results. By training ou
 genre ratings.
 
 **TODO: Write up SVM**
+
 **TODO: Write up ROC, AUROC**
 
 While we were able to successfully cluster users in this project, there
