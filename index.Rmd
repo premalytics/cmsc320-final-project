@@ -285,7 +285,7 @@ set.seed(1234)
 
 # Set up training data for cluster prediction
 training_data <- user_features_df %>%
-  mutate(cluster=kmeans_res$cluster) %>% sample_n(2000) #otherwise we have way too much data
+  mutate(cluster=kmeans_res$cluster) %>% sample_n(5000) #otherwise we have way too much data, can also try < 10k
 
 # Setting up training data for PCA anlaysis:
   # add the depenent variable into the pca 
@@ -386,8 +386,8 @@ fit_control <- trainControl( ## 5-fold CV
 mean_fpr <- seq(0, 1, len=100)
   aucs <- numeric(length(cv_partition))
   
-  # iterate over folds
-  res <- lapply(seq_along(cv_partition),  function(i) {
+# iterate over folds for normal random forest data:
+  rf_res_normal <- lapply(seq_along(cv_partition),  function(i) {
     # train the random forest using train() instead of randomForest, 200 tree's
     fit <- train(cluster~.,
                         data = training_data[-cv_partition[[i]],], # all but the holdout set
@@ -414,12 +414,54 @@ mean_fpr <- seq(0, 1, len=100)
     data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
   })
   
+# combine values across all folds for normal random forest data
+# into a single data frame
+rf_normal_curve_df <- do.call(rbind, rf_res_normal)
+
+# get AUC results:
+rf_normal_auc_df <- rf_normal_curve_df %>% group_by(fold) %>%
+    summarize(auc=pracma::trapz(fpr, tpr))
+
+```
+
+Now let's perform the exact same procedue on our PCA trained data set instead:
+
+
+```{r}
+# iterate over folds for PCA random forest data:
+  rf_res_pca <- lapply(seq_along(cv_partition),  function(i) {
+    # train the random forest using train() instead of randomForest, 200 tree's
+    fit <- train(cluster~.,
+                        data = training_set_pca[-cv_partition[[i]],], # all but the holdout set
+                        method = "rf",
+                        ntree = 200,
+                        trControl = fit_control,
+                        metric="ROC")
+    
+    # make predictions on the holdout set
+    preds <- predict(fit, newdata=training_set_pca[cv_partition[[i]],],type="prob")$up
+    
+    # compute tpr and fpr from the hold out set
+    perf <- ROCR::prediction(preds, training_set_pca$cluster[cv_partition[[i]]]) %>%
+      ROCR::performance(measure="tpr", x.measure="fpr")
+
+    fpr <- unlist(perf@x.values)
+    tpr <- unlist(perf@y.values)
+    
+    # interpolate the roc curve over 0, 1 range
+    interp_tpr <- approxfun(fpr, tpr)(mean_fpr)
+    interp_tpr[1] <- 0.0
+    
+    # collect values for this fold
+    data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
+  })
+  
   # combine values across all folds
   # into a single data frame
-rf_curve_df <- do.call(rbind, res)
+  rf_pca_curve_df <- do.call(rbind, res)
 
-#now we get AUC results:
-rf_auc_df <- rf_curve_df %>% group_by(fold) %>%
+# get AUC results:
+  rf_pca_auc_df <- rf_pca_curve_df %>% group_by(fold) %>%
     summarize(auc=pracma::trapz(fpr, tpr))
 
 ```
@@ -427,9 +469,59 @@ rf_auc_df <- rf_curve_df %>% group_by(fold) %>%
 Now that we've conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we've graphed below: **TODO: Write up + Explain more about AUC/ROC**
 
 ```{r}
+# combine performance data for both models
+# into one data frame (adding column to indicate)
+# which model was used
+curve_df <- rf_normal_curve_df %>%
+  mutate(model="normal") %>%
+  rbind(mutate(rf_pca_curve_df, model="PCA")) %>%
+  mutate(model = factor(model, levels=c("normal", "PCA")))
 
+auc_df <- rf_normal_auc_df %>%
+  mutate(model="normal") %>%
+  rbind(mutate(rf_pca_auc_df, model="PCA")) %>%
+  mutate(model = factor(model, levels=c("normal", "PCA")))
+
+# plot distribution of 
+ggplot(auc_df, aes(x=model, y=auc)) +
+  geom_jitter(position=position_jitter(0.1)) +
+  coord_flip() + 
+  labs(title="AUC comparision",
+       x="Model",
+       y="Area under ROC curve")
 
 ```
+
+
+We can also test for differences using linear regression:
+
+```{r}
+library(broom)
+
+model_tab <- auc_df %>%
+  lm(auc~model,data=.) %>%
+  tidy() 
+
+model_tab %>%
+  knitr::kable()
+```
+
+Now let's compare ROC curves for both the regular training data and the PCA trained data set:
+
+```{r}
+curve_df %>%
+  group_by(model, fpr) %>%
+  summarize(tpr = mean(tpr)) %>%
+  ggplot(aes(x=fpr, y=tpr, color=model)) +
+    geom_line() +
+    labs(title = "ROC curves",
+         x = "False positive rate",
+         y = "True positive rate")
+
+```
+
+**TODO** Write up results for ROC Curves graph
+
 
 ## Results and Discussion
 
@@ -470,7 +562,9 @@ other the other groups. This seems to indicate that there truly is a common grou
 of readers that do not read realistic fiction, but they also likely vary in their average
 ratings across other genres.
 
-**TODO: Write up predictions**
+**TODO: Add more on predictions**
+Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be fantasy, young_adult, and science_fiction genre ratings. Looking at SVM we also found some interesting results.... Finally, by comparing AUC and ROC curves for both the PCA trained and the regular dataset, we also found....
+
 
 While we were able to successfully cluster users in this project, there
 are still several potential areas for improvement. One issue was that by only
