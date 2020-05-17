@@ -20,7 +20,10 @@ Work for this project was split up as follows:
 
 **Jason Hu**
 
-  - 
+  - Explanations for terms, figures
+  - Prose improvements (Links, examples)
+  - Minor code documentation/readability
+  - Proofreading
 
 **Jason Maa**
 
