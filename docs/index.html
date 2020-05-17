@@ -407,12 +407,12 @@ head(user_features_df, 15) %&gt;%
 <h3>Clustering for Higher Dimensions</h3>
 <p>While a 2D graph is fine for comparing two genres, it becomes harder to visualize data like this beyond 3 variables since we run out of spatial dimensions. Furthermore, we are also interested in clustering our data. While we had done a very cursory grouping by eye-balling the data above, ideally, there should be a way to more formally say which data points form a group with one another.</p>
 <p>The solution to both of these problems is found in two methods known as <strong>K-means clustering</strong> and <strong>principal component analysis (PCA)</strong>.</p>
-<p>K-means clustering is a way to cluster, or group, data points. The algorithm designates K centroids representing the centers of their respective clusters. Each data point is assigned to the closest centroid, and the algorithm iteratively optimizes the centroids try to reduce the total distance between it and all the points in its cluster.</p>
+<p>K-means clustering is a way to cluster, or group, data points. The algorithm designates K centroids representing the centers of their respective clusters. Each data point is assigned to the closest centroid, and the algorithm iteratively optimizes the centroids to try to reduce the total distance between it and all the points in its cluster.</p>
 <div class="figure">
 <img src="images/kmeans_iris.png" alt="K-means on iris flower species" />
 <p class="caption">K-means on iris flower species</p>
 </div>
-<p>Meanwhile, principal component analysis (PCA) is a way to reduce the dimensions in high-dimensional data while still trying to preserve features from the original space. Roughly, PCA tries to find a set of linear transformations from the original data that prioritizes maximizing variance for each dimension of the transformed data. At the end, the first two dimensions of the transformed data will ideally encode enough of the variance from the original high-dimensional data that graphing only those two dimensions should suffice in representing the original data, making PCA a very a useful tool for visualization.</p>
+<p>Meanwhile, PCA is a way to reduce the dimensions in high-dimensional data while still trying to preserve features from the original space. Roughly, PCA tries to find a set of linear transformations from the original data that prioritizes maximizing variance for each dimension of the transformed data. At the end, the first two dimensions of the transformed data will ideally encode enough of the variance from the original high-dimensional data that graphing only those two dimensions should suffice in representing the original data, making PCA a very useful tool for visualization.</p>
 <div class="figure">
 <img src="images/pcafish.png" alt="Example PCA: The transformed coordinate system in red maximizes the variance of the pixel locations." />
 <p class="caption">Example PCA: The transformed coordinate system in red maximizes the variance of the pixel locations.</p>
@@ -459,7 +459,7 @@ ggplot(mapping=aes(x=k_range, y=sil)) +
     y=&quot;Average Silhouette&quot;
   )</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-7-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>Observing both graphs, K = 6 appears to be a point where total SSE has begun to flatten but average silhouette is still somewhat high, making it a reasonable compromise for K. With K in hand, we can run K-means clustering on the full data now.</p>
+<p>Observing both graphs, K = 6 appears to be a point where total SSE has begun to flatten but average silhouette is still somewhat high, making it a reasonable compromise for K. With K in hand, we can run K-means clustering on the full data now and graph using PCA.</p>
 <pre class="r"><code>set.seed(320)
 
 kmeans_res &lt;- kmeans(user_features_df, 6)
@@ -472,49 +472,221 @@ kmeans_res$centers %&gt;%
 {"columns":[{"label":["fantasy"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["horror"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["mystery"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["realistic_fiction"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["romance"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["science_fiction"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["thriller"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["young_adult"],"name":[8],"type":["dbl"],"align":["right"]}],"data":[{"1":"4.08","2":"4.06","3":"4.09","4":"-5.00","5":"4.03","6":"3.99","7":"4.00","8":"4.03"},{"1":"4.07","2":"3.95","3":"4.03","4":"3.96","5":"3.98","6":"4.04","7":"3.99","8":"4.07"},{"1":"3.54","2":"-5.00","3":"3.99","4":"3.88","5":"3.96","6":"1.90","7":"3.13","8":"4.09"},{"1":"4.57","2":"4.53","3":"4.56","4":"4.48","5":"4.52","6":"4.56","7":"4.55","8":"4.56"},{"1":"3.62","2":"3.45","3":"3.58","4":"3.54","5":"3.54","6":"3.57","7":"3.53","8":"3.63"},{"1":"3.11","2":"2.96","3":"3.11","4":"3.13","5":"3.10","6":"2.59","7":"2.69","8":"3.15"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-<pre class="r"><code># Autoplot automatically does PCA
-autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
+<pre class="r"><code># PCA
+pca_res &lt;- prcomp(user_features_df, center=TRUE, scale.=TRUE)
+plot_data &lt;- pca_res$x[,1:2] %&gt;%
+  as_tibble() %&gt;%
+  mutate(cluster=factor(kmeans_res$cluster))
+ 
+ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+  geom_point() + 
   labs(title=&quot;Readership Clusters&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 </div>
 <div id="making-predictions" class="section level2">
 <h2>Making Predictions</h2>
-<pre class="r"><code># TODO: cluster prediction (logistic regression? decision tree?)
+<p>Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we simply take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a <strong>training data frame</strong>. Notice also here that we’re also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We’ve also included a graph of the PC’s and how they correspond to clustering with the k-means algorithm.</p>
+<pre class="r"><code>set.seed(1234)
 
-# PCA
-pca_res &lt;- prcomp(data, center=TRUE, scale.=TRUE)
-plot_data &lt;- pca_res$x[,1:2] %&gt;%
-  as_tibble() %&gt;%
-  mutate(cluster=factor(kmeans_res$cluster))
+# Set up training data for cluster prediction
+training_data_ratings &lt;- user_features_df %&gt;%
+  mutate(cluster=factor(kmeans_res$cluster)) %&gt;%
+  sample_n(5000) #otherwise we have way too much data, can also try &lt; 10k
 
-ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
-  geom_point()</code></pre>
-<p><img src="index_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
-<pre class="r"><code># Set up training data for cluster prediction
-training_data &lt;- user_features_df %&gt;%
-  mutate(cluster=kmeans_res$cluster)
+# Setting up training data for PCA anlaysis
+training_data_pca &lt;-  as.data.frame(predict(pca_res, training_data_ratings)) %&gt;% as_tibble()
+training_data_pca$cluster &lt;- training_data_ratings$cluster
 
-head(training_data, 15)</code></pre>
-<pre><code>## # A tibble: 15 x 9
-##    fantasy horror mystery realistic_ficti~ romance science_fiction thriller
-##      &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt;            &lt;dbl&gt;   &lt;dbl&gt;           &lt;dbl&gt;    &lt;dbl&gt;
-##  1    3.55   3.29    3.4              3.51    3.45            3.14     3.4 
-##  2    4.85   5       4.9              4.38    4.12            4.75     4.67
-##  3    1.45   1.5     1.24             2       1.76            1.17     1.13
-##  4    3.90   3.59    3.55             3.65    3.44            3.54     3.18
-##  5    4.11   4.03    4.03             3.95    3.93            4.11     4   
-##  6    4.2    4.25    4.14             4.29    4.43            4.17     4.25
-##  7    3.79   3.78    3.76             4       3.51            3.76     3.6 
-##  8    4.09   3.95    3.81             3.25    3.17            4.42     3.4 
-##  9    3.66   3.67    3.25             3.37    3.52            3.58     3.03
-## 10    4.02   3.88    3.92             3.86    3.76            3.89     3.96
-## 11    3.63   3.69    3.42             3.59    3.44            3.4      3.69
-## 12    3.54   3.38    3.85             3.86    3.56            3.81     3.93
-## 13    3.64   4       4.33             4.29    4.11            4        4.4 
-## 14    3.61   3.6     3.6              3.08    3.32            3.66     3.31
-## 15    4.26   4.45    4                4.35    4.31            4.33     4.08
-## # ... with 2 more variables: young_adult &lt;dbl&gt;, cluster &lt;int&gt;</code></pre>
+training_data_ratings %&gt;%
+  head(15) %&gt;%
+  rmarkdown::paged_table()</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["fantasy"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["horror"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["mystery"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["realistic_fiction"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["romance"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["science_fiction"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["thriller"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["young_adult"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["cluster"],"name":[9],"type":["fctr"],"align":["left"]}],"data":[{"1":"4.000000","2":"4.200000","3":"4.137931","4":"4.090909","5":"3.956522","6":"3.833333","7":"3.772727","8":"4.068182","9":"2"},{"1":"4.346154","2":"4.583333","3":"4.258065","4":"4.375000","5":"4.114286","6":"4.388889","7":"4.200000","8":"4.357143","9":"4"},{"1":"2.542373","2":"1.750000","3":"2.866667","4":"3.023810","5":"2.710744","6":"2.555556","7":"4.000000","8":"2.764706","9":"6"},{"1":"3.250000","2":"3.208333","3":"3.277778","4":"3.210526","5":"3.470588","6":"3.263158","7":"3.355769","8":"3.531250","9":"5"},{"1":"4.294118","2":"4.000000","3":"3.954545","4":"4.090909","5":"4.026316","6":"4.200000","7":"3.823529","8":"4.388889","9":"2"},{"1":"3.611765","2":"3.611111","3":"3.478261","4":"3.266667","5":"3.238095","6":"3.606061","7":"3.350000","8":"3.512821","9":"5"},{"1":"3.923077","2":"3.666667","3":"4.102564","4":"4.215385","5":"4.146667","6":"3.736842","7":"3.800000","8":"4.115789","9":"2"},{"1":"3.642857","2":"3.375000","3":"3.620000","4":"3.517241","5":"3.230769","6":"3.500000","7":"3.589744","8":"4.066667","9":"5"},{"1":"3.400000","2":"3.333333","3":"3.148936","4":"3.279070","5":"3.283582","6":"3.416667","7":"2.892857","8":"3.333333","9":"5"},{"1":"4.392157","2":"4.080000","3":"4.159091","4":"4.333333","5":"4.166667","6":"4.421053","7":"4.148936","8":"4.375000","9":"2"},{"1":"4.323944","2":"3.857143","3":"4.432432","4":"4.066667","5":"4.509091","6":"4.300000","7":"4.426471","8":"4.555556","9":"4"},{"1":"4.075758","2":"4.000000","3":"3.861111","4":"4.000000","5":"3.894737","6":"4.100000","7":"4.111111","8":"4.000000","9":"2"},{"1":"3.419355","2":"3.437500","3":"3.433333","4":"3.700000","5":"3.357143","6":"3.418182","7":"3.378788","8":"3.400000","9":"5"},{"1":"2.428571","2":"3.000000","3":"2.571429","4":"3.250000","5":"3.066667","6":"2.000000","7":"3.000000","8":"2.904762","9":"6"},{"1":"4.543478","2":"4.666667","3":"4.516667","4":"4.608696","5":"4.189189","6":"4.516129","7":"4.509091","8":"4.487179","9":"4"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<pre class="r"><code>training_data_pca %&gt;%
+  head(15) %&gt;%
+  rmarkdown::paged_table()</code></pre>
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["PC1"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["PC2"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["PC3"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["PC4"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["PC5"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["PC6"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["PC7"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["PC8"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["cluster"],"name":[9],"type":["fctr"],"align":["left"]}],"data":[{"1":"0.5432715","2":"0.06760501","3":"-0.26117119","4":"0.049408924","5":"0.35661962","6":"-0.0720484189","7":"-0.15743328","8":"0.209150837","9":"2"},{"1":"1.7124988","2":"-0.09532340","3":"-0.41587198","4":"0.001793298","5":"0.13933396","6":"0.0741115408","7":"0.12240584","8":"0.168393079","9":"4"},{"1":"-4.4858635","2":"0.29207600","3":"0.19098462","4":"1.319743745","5":"-1.31901999","6":"0.2895388994","7":"0.12493279","8":"0.002011214","9":"6"},{"1":"-2.1683099","2":"-0.07469882","3":"-0.06015029","4":"0.131769337","5":"0.01353766","6":"0.3659025899","7":"-0.07502277","8":"-0.238329350","9":"5"},{"1":"1.0042900","2":"0.07549336","3":"-0.19354034","4":"-0.444154133","5":"0.20624783","6":"0.2619933142","7":"0.37055970","8":"-0.025279148","9":"2"},{"1":"-1.7376314","2":"-0.46859041","3":"-0.33917834","4":"-0.062124867","5":"-0.08948850","6":"-0.0689205683","7":"0.23463564","8":"0.233711202","9":"5"},{"1":"0.5289511","2":"0.51379435","3":"-0.01537821","4":"-0.009720388","5":"0.24764651","6":"0.0582680245","7":"-0.29587416","8":"-0.057938315","9":"2"},{"1":"-1.1468758","2":"0.03331248","3":"-0.07732837","4":"-0.057802762","5":"0.02696398","6":"0.5232854352","7":"0.55128740","8":"0.637532659","9":"5"},{"1":"-2.5592775","2":"-0.31325136","3":"-0.47189964","4":"-0.327458115","5":"0.06364221","6":"0.0008810543","7":"0.07727219","8":"-0.222155851","9":"5"},{"1":"1.5987138","2":"0.11897876","3":"-0.21761659","4":"-0.244206519","5":"-0.04598309","6":"0.1092285365","7":"0.21672458","8":"-0.023056364","9":"2"},{"1":"2.1594241","2":"0.36319724","3":"0.42779839","4":"-0.032419488","5":"0.02760074","6":"0.2542841936","7":"-0.17024490","8":"-0.082556828","9":"4"},{"1":"0.4501249","2":"-0.12269423","3":"-0.28559652","4":"0.122082956","5":"-0.17601531","6":"0.0715410461","7":"0.22023329","8":"-0.121412455","9":"2"},{"1":"-1.9275514","2":"-0.07091472","3":"-0.48955500","4":"0.167066369","5":"-0.12405981","6":"-0.0504020783","7":"-0.03436655","8":"0.004469251","9":"5"},{"1":"-4.7187872","2":"0.20184691","3":"-0.44044534","4":"0.971369577","5":"0.35026165","6":"0.4968258379","7":"-0.15497733","8":"-0.632476016","9":"6"},{"1":"2.4385145","2":"0.01557281","3":"-0.36082437","4":"0.137893680","5":"0.02324007","6":"-0.0499055453","7":"0.17861266","8":"0.370130036","9":"4"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+  </script>
+</div>
+<div id="random-forests" class="section level3">
+<h3>Random Forests</h3>
+<p>Now that we’ve generated our training data set, let’s begin training our own ML model! First, we’ll take a look at a very popular tree-based model known as <strong>random forest</strong>. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.</p>
+<pre class="r"><code># Training classification on dataframe using randomForest (n = 200):
+rf_prediction &lt;- randomForest(cluster ~ .,
+                              ntree=200,
+                              importance=TRUE,
+                              data=training_data_ratings)</code></pre>
+<p>Now that we’ve generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:</p>
+<pre class="r"><code>variable_importance &lt;- importance(rf_prediction)
+
+rf_predictors_importance &lt;- variable_importance %&gt;%
+  as.data.frame() %&gt;%
+  rownames_to_column(var=&quot;predictors&quot;)
+
+rf_predictors_importance %&gt;%
+  ggplot(aes(x=reorder(predictors, MeanDecreaseAccuracy), y=MeanDecreaseAccuracy)) +
+  geom_bar(stat=&quot;identity&quot;) +
+  coord_flip() +
+  labs(title=&quot;Genres by Importance&quot;, y=&quot;Mean Decrease Accuracy&quot;, x=&quot;Genre&quot;)</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users.</p>
+<p><strong>TODO: Talk about mean decrease accuracy and how it relates to importance?</strong></p>
+</div>
+<div id="support-vector-machines" class="section level3">
+<h3>Support Vector Machines</h3>
+<p>As an additional example, we’ll also show how to train using a <strong>support vector machine</strong> (SVM) multi-classification model as an additional factor in our experiment below. The way SVM works, is to actually <strong>increase dimension</strong> as compared to PCA. Basically, we want to create a hyperplane - some n-dimensional vector that can effectively separate between multiple classes in the classification problem. As an example of how this work, consider a simple 2 group classification problem in 2D:</p>
+<div class="figure">
+<img src="images/svm_example.png" alt="Example SVM: Moving from 2D coordinate space to 3D in order to better separate classification" />
+<p class="caption">Example SVM: Moving from 2D coordinate space to 3D in order to better separate classification</p>
+</div>
+<p>In the example above, the 2D plot is circular, meaning there is no easy, linear division between the red and blue points. However, if we extend to 3D (by letting <span class="math inline">\(z = x^2 + y^2\)</span>) we get a shape in 3D that we can divide using a plane. Notice that by translating this plane into 2D, we actually get a circle although in 3D it is “linear/planar”. The “support vectors” in SVM refer to the data points closest to the hyperplane, which are used to help determine the hyperplane itself. In the next example, we use the ratings training data set to train our SVM model:</p>
+<pre class="r"><code>set.seed(1234)    # Setting seed for reproducibility
+
+n &lt;- nrow(training_data_ratings)  # Number of observations
+ntrain &lt;- round(n*0.75)  # 75% for training set
+split_index &lt;- sample(n, ntrain)   # Create a random index
+train_svm &lt;- training_data_ratings[split_index,]   # Create training set
+test_svm &lt;- training_data_ratings[-split_index,]   # Create test set
+
+svm_prediction &lt;- svm(cluster ~ .,
+                      data=train_svm, 
+                      method=&quot;C-classification&quot;,
+                      kernal=&quot;radial&quot;, 
+                      gamma=0.1,
+                      cost=10) #coefficients determined w/ help from guide</code></pre>
+<p>Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we’ll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according to our previous random forest model) while keeping the others constant:</p>
+<p><strong>TODO: this graph needs to be made more clear</strong></p>
+<pre class="r"><code># using plot() to visualize our hyperplane:
+plot(svm_prediction, train_svm, realistic_fiction ~ horror,
+          slice=list(fantasy = 3, mystery = 3, young_adult = 3, romance = 3, science_fiction = 3, thriller = 3))</code></pre>
+<p><img src="index_files/figure-html/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set and plotting a confusion matrix:</p>
+<p><strong>TODO: can talk about confusion matrix too</strong></p>
+<pre class="r"><code>pred_svm &lt;- predict(svm_prediction, test_svm)
+
+table(test_svm$cluster, pred_svm)</code></pre>
+<pre><code>##    pred_svm
+##       1   2   3   4   5   6
+##   1  20   0   0   0   0   0
+##   2   0 439   0   0   1   0
+##   3   0   0  11   0   0   1
+##   4   0   1   0 244   0   0
+##   5   0   1   0   0 446   3
+##   6   0   0   0   0   1  82</code></pre>
+<pre class="r"><code>prop.table(table(test_svm$cluster, pred_svm), 1)</code></pre>
+<pre><code>##    pred_svm
+##               1           2           3           4           5           6
+##   1 1.000000000 0.000000000 0.000000000 0.000000000 0.000000000 0.000000000
+##   2 0.000000000 0.997727273 0.000000000 0.000000000 0.002272727 0.000000000
+##   3 0.000000000 0.000000000 0.916666667 0.000000000 0.000000000 0.083333333
+##   4 0.000000000 0.004081633 0.000000000 0.995918367 0.000000000 0.000000000
+##   5 0.000000000 0.002222222 0.000000000 0.000000000 0.991111111 0.006666667
+##   6 0.000000000 0.000000000 0.000000000 0.000000000 0.012048193 0.987951807</code></pre>
+</div>
+<div id="evaluating-model-performance" class="section level3">
+<h3>Evaluating Model Performance</h3>
+<p>From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let’s analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we’ll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance.</p>
+<pre class="r"><code>set.seed(1234)
+
+# setup training parameters
+fit_control &lt;- trainControl( ## 5-fold CV
+  method = &quot;cv&quot;,
+  number = 5)
+
+evaluate_model &lt;- function(training_data) {
+  # We use 5-fold Cross Validation as our experiment to determine the accuracy of our random_forest model:
+  # create the cross-validation partition
+  cv_partition &lt;- createFolds(training_data$cluster, k=5)
+
+  # iterate over folds for normal random forest data:
+  rf_res &lt;- sapply(seq_along(cv_partition),  function(i) {
+    # train the random forest using train() instead of randomForest, 10 trees
+    fit &lt;- train(cluster ~ .,
+                 data = training_data[-cv_partition[[i]],], # all but the holdout set
+                 method = &quot;rf&quot;,
+                 ntree = 10,
+                 trControl = fit_control)
+    
+    # make predictions on the holdout set
+    preds &lt;- predict(fit, training_data[cv_partition[[i]],])
+      
+    sum(preds == training_data$cluster[cv_partition[[i]]]) / length(preds) # output percentage correctly identified for now
+    
+    # compute tpr and fpr from the hold out set
+    #perf &lt;- ROCR::prediction(preds, training_data$cluster[cv_partition[[i]]]) %&gt;%
+    #  ROCR::performance(measure=&quot;tpr&quot;, x.measure=&quot;fpr&quot;)
+  
+    #fpr &lt;- unlist(perf@x.values)
+    #tpr &lt;- unlist(perf@y.values)
+      
+    # interpolate the roc curve over 0, 1 range
+    #interp_tpr &lt;- approxfun(fpr, tpr)(mean_fpr)
+    #interp_tpr[1] &lt;- 0.0
+      
+    # collect values for this fold
+    #data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
+  })
+  
+  # combine values across all folds for normal random forest data
+  # into a single data frame
+  #rf_normal_curve_df &lt;- do.call(rbind, rf_res_normal)
+  
+  # get AUC results:
+  #rf_normal_auc_df &lt;- rf_normal_curve_df %&gt;% group_by(fold) %&gt;%
+  #  summarize(auc=pracma::trapz(fpr, tpr))
+  
+  rf_res
+}
+
+rf_ratings_res &lt;- evaluate_model(training_data_ratings)
+rf_pca_res &lt;- evaluate_model(training_data_pca)</code></pre>
+<p>Now let’s perform the exact same procedue on our PCA trained data set instead:</p>
+<p>Now that we’ve conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we’ve graphed below:</p>
+<p><strong>TODO: Write up + Explain more about AUC/ROC</strong></p>
+<pre class="r"><code># combine performance data for both models
+# into one data frame (adding column to indicate)
+# which model was used
+curve_df &lt;- rf_normal_curve_df %&gt;%
+  mutate(model=&quot;normal&quot;) %&gt;%
+  rbind(mutate(rf_pca_curve_df, model=&quot;PCA&quot;)) %&gt;%
+  mutate(model = factor(model, levels=c(&quot;normal&quot;, &quot;PCA&quot;)))
+
+auc_df &lt;- rf_normal_auc_df %&gt;%
+  mutate(model=&quot;normal&quot;) %&gt;%
+  rbind(mutate(rf_pca_auc_df, model=&quot;PCA&quot;)) %&gt;%
+  mutate(model = factor(model, levels=c(&quot;normal&quot;, &quot;PCA&quot;)))
+
+# plot distribution of 
+ggplot(auc_df, aes(x=model, y=auc)) +
+  geom_jitter(position=position_jitter(0.1)) +
+  coord_flip() + 
+  labs(title=&quot;AUC comparision&quot;,
+       x=&quot;Model&quot;,
+       y=&quot;Area under ROC curve&quot;)</code></pre>
+<p>We can also test for differences using linear regression:</p>
+<pre class="r"><code>model_tab &lt;- auc_df %&gt;%
+  lm(auc~model,data=.) %&gt;%
+  tidy() 
+
+model_tab %&gt;%
+  knitr::kable()</code></pre>
+<p>Now let’s compare ROC curves for both the regular training data and the PCA trained data set:</p>
+<pre class="r"><code>curve_df %&gt;%
+  group_by(model, fpr) %&gt;%
+  summarize(tpr = mean(tpr)) %&gt;%
+  ggplot(aes(x=fpr, y=tpr, color=model)) +
+    geom_line() +
+    labs(title = &quot;ROC curves&quot;,
+         x = &quot;False positive rate&quot;,
+         y = &quot;True positive rate&quot;)</code></pre>
+<p><strong>TODO: Write up results for ROC Curves graph</strong></p>
+</div>
 </div>
 <div id="results-and-discussion" class="section level2">
 <h2>Results and Discussion</h2>
@@ -532,7 +704,10 @@ head(training_data, 15)</code></pre>
 <p>Observing group 6, both its large variation and slight intersection into group 5 seem to indicate that while the average ratings are around 3, there are probably a substantial amount of users within the group that rate very low, dragging the averages down.</p>
 <p>Group 3 is also an interesting case. The cluster has large variation and a somewhat specific qualitative description. Moreover, informal observation of the cluster graph seems to show smaller clusters within this group as well. This seems to indicate that while the users in this group generally have the qualitative characteristics as described above in common, there are still sub-groups within this cluster that have varying defining characteristics from each other.</p>
 <p>Group 1 is another cluster with a specific qualitative description. The variation within this cluster is somewhat high and the cluster is located far away from other the other groups. This seems to indicate that there truly is a common group of readers that do not read realistic fiction, but they also likely vary in their average ratings across other genres.</p>
-<p><strong>TODO: Write up predictions</strong></p>
+<p><strong>TODO: Add more on predictions</strong></p>
+<p>Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most “important” predictors for classification seemed to be fantasy, young adult, and science fiction genre ratings.</p>
+<p><strong>TODO: Write up SVM</strong></p>
+<p><strong>TODO: Write up ROC, AUROC</strong></p>
 <p>While we were able to successfully cluster users in this project, there are still several potential areas for improvement. One issue was that by only working with the average genre ratings for each user, we lost information about the variance of ratings within each genre per user. This means that certain users may have ended up in the same cluster because they had similar average ratings but still rate books differently in reality because the variation in how they rate was not accounted for.</p>
 <p>Another area that could have been improved was our clustering algorithm. K-means clustering was not able to find some of the smaller clusters in group 6, possibly due to a large amount of users in other locations which ended up occupying the algorithm. Since there were more data points densely packed in the area near groups 2 and 5, the centroids for K-means ended up gathering near there and ignoring smaller clusters elsewhere.</p>
 <p><strong>TODO: Talk more on improvements</strong></p>
