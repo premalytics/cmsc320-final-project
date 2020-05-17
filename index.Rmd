@@ -176,7 +176,7 @@ and **principal component analysis (PCA)**.
 
 K-means clustering is a way to cluster, or group, data points. The algorithm designates
 K centroids representing the centers of their respective clusters. Each data point is assigned
-to the closest centroid, and the algorithm iteratively optimizes the centroids try to reduce the total distance
+to the closest centroid, and the algorithm iteratively optimizes the centroids to try to reduce the total distance
 between it and all the points in its cluster.
 
 ![K-means on iris flower species](images/kmeans_iris.png)
@@ -185,8 +185,7 @@ Meanwhile, principal component analysis (PCA) is a way to reduce the dimensions 
 still trying to preserve features from the original space. Roughly, PCA tries to find a set of linear
 transformations from the original data that prioritizes maximizing variance for each dimension of the transformed data.
 At the end, the first two dimensions of the transformed data will ideally encode enough of the variance from the original
-high-dimensional data that graphing only those two dimensions should suffice in representing the original data, making PCA a very
-a useful tool for visualization.
+high-dimensional data that graphing only those two dimensions should suffice in representing the original data, making PCA a very useful tool for visualization.
 
 ![Example PCA: The transformed coordinate system in red maximizes the variance of the pixel locations.](images/pcafish.png)
 
@@ -268,23 +267,59 @@ autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
 
 ## Making Predictions
 
+Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we simply take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.
+
 ```{r}
 # TODO: cluster prediction (logistic regression? decision tree?)
 
 # PCA
-pca_res <- prcomp(data, center=TRUE, scale.=TRUE)
-plot_data <- pca_res$x[,1:2] %>%
-  as_tibble() %>%
-  mutate(cluster=factor(kmeans_res$cluster))
-
-ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
-  geom_point()
+# TODO: ERROR need to fix:
+ pca_res <- prcomp(user_features_df, center=TRUE, scale.=TRUE)
+ plot_data <- pca_res$x[,1:2] %>%
+   as_tibble() %>%
+   mutate(cluster=factor(kmeans_res$cluster))
+ 
+ ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
+   geom_point()
 
 # Set up training data for cluster prediction
 training_data <- user_features_df %>%
   mutate(cluster=kmeans_res$cluster)
 
 head(training_data, 15)
+
+# Here we do random forest + PCA?/Logistic Regression?
+```
+
+Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **Random Forest**. In a regular Decision Tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With Random Forest, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
+
+
+```{r}
+library(randomForest)
+
+#training classification on dataframe using randomForest (n = 200):
+rf_prediction <- randomForest(cluster~., ntree=200, importance=TRUE, data=training_data)
+```
+
+
+Now that we've generated our randomForest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:
+
+```{r}
+variable_importance <- importance(rf_prediction)
+knitr::kable(head(round(variable_importance, digits=2))) 
+
+#dataframe
+rf_predictors_importance <- variable_importance %>% as.data.frame() %>% rownames_to_column(var = "predictors")
+#bar plot of importance
+ggplot(rf_predictors_importance, aes(x = rf_predictors_importance$predictors, y = rf_predictors_importance$IncNodePurity)) + geom_bar(stat = "identity") + coord_flip() + ylab("Importance") + xlab("predictors")
+```
+
+
+From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset.
+
+```{r}
+
+
 ```
 
 ## Results and Discussion
