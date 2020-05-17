@@ -270,10 +270,8 @@ autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
 Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we simply take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.
 
 ```{r}
-# TODO: cluster prediction (logistic regression? decision tree?)
 
 # PCA
-# TODO: ERROR need to fix:
  pca_res <- prcomp(user_features_df, center=TRUE, scale.=TRUE)
  plot_data <- pca_res$x[,1:2] %>%
    as_tibble() %>%
@@ -282,13 +280,21 @@ Here in this section we talk about prediction analysis using R, specifically wit
  ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
    geom_point()
 
+#needed for sampling:
+set.seed(1234)
+
 # Set up training data for cluster prediction
 training_data <- user_features_df %>%
-  mutate(cluster=kmeans_res$cluster)
+  mutate(cluster=kmeans_res$cluster) %>% sample_n(2000) #otherwise we have way too much data
 
+# Setting up training data for PCA anlaysis:
+  # add the depenent variable into the pca 
+training_set_pca <-  as.data.frame(predict(pca_res, training_data))
+  # add the dependent varaible cluster to the training set
+training_set_pca$cluster <-  training_data$cluster
 head(training_data, 15)
+head(training_set_pca, 15)
 
-# Here we do random forest + PCA?/Logistic Regression?
 ```
 
 Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **Random Forest**. In a regular Decision Tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With Random Forest, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
@@ -298,7 +304,7 @@ Now that we've generated our training data set, let's begin training our own ML 
 library(randomForest)
 
 #training classification on dataframe using randomForest (n = 200):
-rf_prediction <- randomForest(cluster~., ntree=200, importance=TRUE, data=training_data)
+rf_prediction <- randomForest(cluster~., ntree=200, importance=TRUE, data=training_data) #naive training
 ```
 
 
@@ -315,7 +321,110 @@ ggplot(rf_predictors_importance, aes(x = rf_predictors_importance$predictors, y 
 ```
 
 
-From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset.
+As an additional example, we'll also show how to train using an SVM (support vector machine) multi-classification model as an additional factor in our experiment below. The way SVM works, is to actually **increase dimension** as compared to PCA. Basically, we want to create a hyperplane - some n-dimensional vector that can effectively separate between multiple classes in the classification problem. As an example of how this work, consider a simple 2 group classification problem in 2D:
+
+![Example SVM: Moving from 2D coordinate space to 3D in order to better separate classification](images/svm_example.png)
+
+In the example above, the 2D plot is circular, meaning there is no easy, linear division between the red and blue points. However, if we extend to 3D (by letting $z = x^2 + y^2$) we get a shape in 3D that we can divide using a plane. Notice that by translating this plane into 2D, we actually get a circle although in 3D it is "linear/planar". The "support vectors" in SVM refer to the data points closest to the hyperplane, which are used to help determine the hyperplane itself. In the next example, we use the regular training data set to train our SVM model:
+
+```{r}
+library(e1071)
+n <- nrow(training_data)  # Number of observations
+ntrain <- round(n*0.75)  # 75% for training set
+set.seed(1234)    # Setting seed for reproducibility
+split_index <- sample(n, ntrain)   # Create a random index
+train_svm <- training_data[split_index,]   # Create training set
+test_svm <- training_data[-split_index,]   # Create test set
+svm_prediction <- svm(cluster~., data=train_svm, 
+          method="C-classification", kernal="radial", 
+          gamma=0.1, cost=10) #coefficients determined w/ help from guide
+```
+
+
+
+Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we'll consider the differences between ratings for "young_adult" and "fantasy" (2 predictors of importance according to our previous random forest model) while keeping the others constant:
+
+```{r}
+
+# using plot() to visualize our hyperplane:
+plot(svm_prediction, train_svm, young_adult ~ fantasy,
+          slice=list(horror = 3, mystery = 3, realistic_fiction = 3, romance = 3, science_fiction = 3, thriller = 3))
+
+```
+
+Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set:
+```{r}
+testing_predictions <- predict(svm_prediction, test_svm)
+xtab <- table(test_svm$cluster, testing_predictions)
+xtab
+```
+
+
+From previous we can see a table of our classifications, and can see how many were classified correctly with the SVM model and how many weren't.... **TODO: Run and Finish describing this information**
+
+
+
+From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we'll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance.  
+
+```{r}
+# We use 5-fold Cross Validation as our experiment to determine the accuracy of our random_forest model:
+library(caret)
+set.seed(1234)
+# create the cross-validation partition
+cv_partition <- createFolds(training_data$cluster,
+                            k=5)
+
+# setup training parameters
+fit_control <- trainControl( ## 5-fold CV
+  method = "cv",
+  number = 5,
+  #indexOut = cv_partition,
+  summaryFunction=twoClassSummary,
+  classProbs=TRUE,
+  savePredictions=TRUE)
+
+mean_fpr <- seq(0, 1, len=100)
+  aucs <- numeric(length(cv_partition))
+  
+  # iterate over folds
+  res <- lapply(seq_along(cv_partition),  function(i) {
+    # train the random forest using train() instead of randomForest, 200 tree's
+    fit <- train(cluster~.,
+                        data = training_data[-cv_partition[[i]],], # all but the holdout set
+                        method = "rf",
+                        ntree = 200,
+                        trControl = fit_control,
+                        metric="ROC")
+    
+    # make predictions on the holdout set
+    preds <- predict(fit, newdata=training_data[cv_partition[[i]],],type="prob")$up
+    
+    # compute tpr and fpr from the hold out set
+    perf <- ROCR::prediction(preds, training_data$cluster[cv_partition[[i]]]) %>%
+      ROCR::performance(measure="tpr", x.measure="fpr")
+
+    fpr <- unlist(perf@x.values)
+    tpr <- unlist(perf@y.values)
+    
+    # interpolate the roc curve over 0, 1 range
+    interp_tpr <- approxfun(fpr, tpr)(mean_fpr)
+    interp_tpr[1] <- 0.0
+    
+    # collect values for this fold
+    data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
+  })
+  
+  # combine values across all folds
+  # into a single data frame
+rf_curve_df <- do.call(rbind, res)
+
+#now we get AUC results:
+rf_auc_df <- rf_curve_df %>% group_by(fold) %>%
+    summarize(auc=pracma::trapz(fpr, tpr))
+
+```
+
+Now that we've conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we've graphed below: **TODO: Write up + Explain more about AUC/ROC**
 
 ```{r}
 
