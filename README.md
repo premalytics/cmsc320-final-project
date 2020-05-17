@@ -31,4 +31,8 @@ Work for this project was split up as follows:
 
 **Robert Yang**
 
-  - 
+  - Generated Prediction models for Random Forest, SVM, and PCA Training Data set w/ Random Forest
+  - AUC/ROC Curves model for model prediction analysis
+  - Write up of ML information and tutorial
+  - PCA training pre-processing
+  - Edited additional information in Prediction and Discussion/Conclusion
