@@ -285,42 +285,39 @@ ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
 
 ## Making Predictions
 
-Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we simply take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.
+Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.	
+
 
 ```{r}
-set.seed(1234)
-
-# Set up training data for cluster prediction
-training_data_ratings <- user_features_df %>%
-  mutate(cluster=factor(kmeans_res$cluster)) %>%
-  sample_n(5000) #otherwise we have way too much data, can also try < 10k
-
-# Setting up training data for PCA anlaysis
-training_data_pca <-  as.data.frame(predict(pca_res, training_data_ratings)) %>% as_tibble()
-training_data_pca$cluster <- training_data_ratings$cluster
-
-training_data_ratings %>%
-  head(15) %>%
-  rmarkdown::paged_table()
-
-training_data_pca %>%
-  head(15) %>%
+set.seed(1234)	
+# Set up training data for cluster prediction	
+training_data_ratings <- user_features_df %>%	
+  mutate(cluster=factor(kmeans_res$cluster)) %>%	
+  sample_n(5000) #otherwise we have way too much data, can also try < 10k	
+# Setting up training data for PCA anlaysis	
+training_data_pca <-  as.data.frame(predict(pca_res, training_data_ratings)) %>% as_tibble()	
+training_data_pca$cluster <- training_data_ratings$cluster	
+training_data_ratings %>%	
+  head(15) %>%	
+  rmarkdown::paged_table()	
+training_data_pca %>%	
+  head(15) %>%	
   rmarkdown::paged_table()
 ```
 
-### Random Forests
+### Random Forests	
 
-Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **random forest**. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
+Now that we've generated our training data set, we can begin training our own machine learning (ML) model. First, we'll take a look at a very popular tree-based model known as [**random forest**](https://towardsdatascience.com/understanding-random-forest-58381e0602d2). In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
 
-```{r}
-# Training classification on dataframe using randomForest (n = 200):
-rf_prediction <- randomForest(cluster ~ .,
-                              ntree=200,
-                              importance=TRUE,
-                              data=training_data_ratings)
-```
+```{r}	
+# Training classification on dataframe using randomForest (n = 200):	
+rf_prediction <- randomForest(cluster ~ .,	
+                              ntree=200,	
+                              importance=TRUE,	
+                              data=training_data_ratings)	
+```	
 
-Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:
+Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. The importance of each predictor is judged by the **Mean Decrease in Accuracy**, which is calculated as the decrease in accuracy when the predictor is removed from the model, allowing us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first predictor were removed, it would result in the model making on average more misclassifications than the second.
 
 ```{r, fig.align='center'}
 variable_importance <- importance(rf_prediction)
@@ -338,8 +335,6 @@ rf_predictors_importance %>%
 
 From the graph, it seems that ratings in certain genres such as realistic fiction and horror
 are able to better classify users.
-
-**TODO: Talk about mean decrease accuracy and how it relates to importance?**
 
 ### Support Vector Machines
 
