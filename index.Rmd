@@ -288,12 +288,18 @@ training_data <- user_features_df %>%
   mutate(cluster=kmeans_res$cluster) %>% sample_n(5000) #otherwise we have way too much data, can also try < 10k
 
 # Setting up training data for PCA anlaysis:
-  # add the depenent variable into the pca 
+# add the depenent variable into the pca 
 training_set_pca <-  as.data.frame(predict(pca_res, training_data))
-  # add the dependent varaible cluster to the training set
+# add the dependent varaible cluster to the training set
 training_set_pca$cluster <-  training_data$cluster
-head(training_data, 15)
-head(training_set_pca, 15)
+
+training_data %>%
+  head(15) %>%
+  rmarkdown::paged_table()
+  
+training_set_pca %>%
+  head(15) %>%
+  rmarkdown::paged_table()
 
 ```
 
@@ -329,9 +335,10 @@ In the example above, the 2D plot is circular, meaning there is no easy, linear 
 
 ```{r}
 library(e1071)
+set.seed(1234)    # Setting seed for reproducibility
+
 n <- nrow(training_data)  # Number of observations
 ntrain <- round(n*0.75)  # 75% for training set
-set.seed(1234)    # Setting seed for reproducibility
 split_index <- sample(n, ntrain)   # Create a random index
 train_svm <- training_data[split_index,]   # Create training set
 test_svm <- training_data[-split_index,]   # Create test set
@@ -340,8 +347,6 @@ svm_prediction <- svm(cluster~., data=train_svm,
           gamma=0.1, cost=10) #coefficients determined w/ help from guide
 ```
 
-
-
 Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we'll consider the differences between ratings for "young_adult" and "fantasy" (2 predictors of importance according to our previous random forest model) while keeping the others constant:
 
 ```{r}
@@ -349,78 +354,80 @@ Now we can visualize our hyperplane and the way our SVM model is classifying usi
 # using plot() to visualize our hyperplane:
 plot(svm_prediction, train_svm, young_adult ~ fantasy,
           slice=list(horror = 3, mystery = 3, realistic_fiction = 3, romance = 3, science_fiction = 3, thriller = 3))
+train_svm
 
 ```
 
 Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set:
 ```{r}
 testing_predictions <- predict(svm_prediction, test_svm)
-xtab <- table(test_svm$cluster, testing_predictions)
-xtab
+xtab <- data.frame(test_svm$cluster, testing_predictions) %>% as_tibble()
+names(xtab) <- c('cluster', 'prediction')
+
+xtab %>%
+  head(15) %>%
+  rmarkdown::paged_table()
 ```
 
 
-From previous we can see a table of our classifications, and can see how many were classified correctly with the SVM model and how many weren't.... **TODO: Run and Finish describing this information**
+From previous we can see a table of our classifications, and can see how many were classified correctly with the SVM model and how many weren't....
 
-
+**TODO: Run and Finish describing this information**
 
 From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we'll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance.  
 
 ```{r}
-# We use 5-fold Cross Validation as our experiment to determine the accuracy of our random_forest model:
 library(caret)
 set.seed(1234)
+
+# We use 5-fold Cross Validation as our experiment to determine the accuracy of our random_forest model:
 # create the cross-validation partition
-cv_partition <- createFolds(training_data$cluster,
-                            k=5)
+cv_partition <- createFolds(training_data$cluster, k=5)
 
 # setup training parameters
 fit_control <- trainControl( ## 5-fold CV
   method = "cv",
-  number = 5,
-  #indexOut = cv_partition,
-  summaryFunction=twoClassSummary,
-  classProbs=TRUE,
-  savePredictions=TRUE)
+  number = 5)
 
 mean_fpr <- seq(0, 1, len=100)
-  aucs <- numeric(length(cv_partition))
+aucs <- numeric(length(cv_partition))
   
 # iterate over folds for normal random forest data:
-  rf_res_normal <- lapply(seq_along(cv_partition),  function(i) {
-    # train the random forest using train() instead of randomForest, 200 tree's
-    fit <- train(cluster~.,
-                        data = training_data[-cv_partition[[i]],], # all but the holdout set
-                        method = "rf",
-                        ntree = 200,
-                        trControl = fit_control,
-                        metric="ROC")
+rf_res_normal <- lapply(seq_along(cv_partition),  function(i) {
+  # train the random forest using train() instead of randomForest, 200 tree's
+  fit <- train(cluster ~ .,
+               data = training_data[-cv_partition[[i]],], # all but the holdout set
+               method = "rf",
+               ntree = 10, # use 10 for now...
+               trControl = fit_control)
     
-    # make predictions on the holdout set
-    preds <- predict(fit, newdata=training_data[cv_partition[[i]],],type="prob")$up
+  # make predictions on the holdout set
+  # preds <- predict(fit, newdata=training_data[cv_partition[[i]],],type="prob")$up
     
-    # compute tpr and fpr from the hold out set
-    perf <- ROCR::prediction(preds, training_data$cluster[cv_partition[[i]]]) %>%
-      ROCR::performance(measure="tpr", x.measure="fpr")
+  # compute tpr and fpr from the hold out set
+  #perf <- ROCR::prediction(preds, training_data$cluster[cv_partition[[i]]]) %>%
+  #  ROCR::performance(measure="tpr", x.measure="fpr")
 
-    fpr <- unlist(perf@x.values)
-    tpr <- unlist(perf@y.values)
+  ##fpr <- unlist(perf@x.values)
+  #tpr <- unlist(perf@y.values)
     
-    # interpolate the roc curve over 0, 1 range
-    interp_tpr <- approxfun(fpr, tpr)(mean_fpr)
-    interp_tpr[1] <- 0.0
+  # interpolate the roc curve over 0, 1 range
+  #interp_tpr <- approxfun(fpr, tpr)(mean_fpr)
+  #interp_tpr[1] <- 0.0
     
-    # collect values for this fold
-    data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
-  })
+  # collect values for this fold
+  #data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
+})
   
+rf_res_normal
+
 # combine values across all folds for normal random forest data
 # into a single data frame
-rf_normal_curve_df <- do.call(rbind, rf_res_normal)
+#rf_normal_curve_df <- do.call(rbind, rf_res_normal)
 
 # get AUC results:
-rf_normal_auc_df <- rf_normal_curve_df %>% group_by(fold) %>%
-    summarize(auc=pracma::trapz(fpr, tpr))
+#rf_normal_auc_df <- rf_normal_curve_df %>% group_by(fold) %>%
+#  summarize(auc=pracma::trapz(fpr, tpr))
 
 ```
 
@@ -428,47 +435,14 @@ Now let's perform the exact same procedue on our PCA trained data set instead:
 
 
 ```{r}
-# iterate over folds for PCA random forest data:
-  rf_res_pca <- lapply(seq_along(cv_partition),  function(i) {
-    # train the random forest using train() instead of randomForest, 200 tree's
-    fit <- train(cluster~.,
-                        data = training_set_pca[-cv_partition[[i]],], # all but the holdout set
-                        method = "rf",
-                        ntree = 200,
-                        trControl = fit_control,
-                        metric="ROC")
-    
-    # make predictions on the holdout set
-    preds <- predict(fit, newdata=training_set_pca[cv_partition[[i]],],type="prob")$up
-    
-    # compute tpr and fpr from the hold out set
-    perf <- ROCR::prediction(preds, training_set_pca$cluster[cv_partition[[i]]]) %>%
-      ROCR::performance(measure="tpr", x.measure="fpr")
-
-    fpr <- unlist(perf@x.values)
-    tpr <- unlist(perf@y.values)
-    
-    # interpolate the roc curve over 0, 1 range
-    interp_tpr <- approxfun(fpr, tpr)(mean_fpr)
-    interp_tpr[1] <- 0.0
-    
-    # collect values for this fold
-    data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
-  })
-  
-  # combine values across all folds
-  # into a single data frame
-  rf_pca_curve_df <- do.call(rbind, res)
-
-# get AUC results:
-  rf_pca_auc_df <- rf_pca_curve_df %>% group_by(fold) %>%
-    summarize(auc=pracma::trapz(fpr, tpr))
-
+# TODO: replacing with generalized training func
 ```
 
-Now that we've conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we've graphed below: **TODO: Write up + Explain more about AUC/ROC**
+Now that we've conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we've graphed below:
 
-```{r}
+**TODO: Write up + Explain more about AUC/ROC**
+
+```{r, eval = FALSE}
 # combine performance data for both models
 # into one data frame (adding column to indicate)
 # which model was used
@@ -492,10 +466,9 @@ ggplot(auc_df, aes(x=model, y=auc)) +
 
 ```
 
-
 We can also test for differences using linear regression:
 
-```{r}
+```{r, eval = FALSE}
 library(broom)
 
 model_tab <- auc_df %>%
@@ -508,7 +481,7 @@ model_tab %>%
 
 Now let's compare ROC curves for both the regular training data and the PCA trained data set:
 
-```{r}
+```{r, eval = FALSE}
 curve_df %>%
   group_by(model, fpr) %>%
   summarize(tpr = mean(tpr)) %>%
@@ -520,7 +493,7 @@ curve_df %>%
 
 ```
 
-**TODO** Write up results for ROC Curves graph
+**TODO: Write up results for ROC Curves graph**
 
 
 ## Results and Discussion
@@ -563,8 +536,12 @@ of readers that do not read realistic fiction, but they also likely vary in thei
 ratings across other genres.
 
 **TODO: Add more on predictions**
-Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be fantasy, young_adult, and science_fiction genre ratings. Looking at SVM we also found some interesting results.... Finally, by comparing AUC and ROC curves for both the PCA trained and the regular dataset, we also found....
 
+Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be fantasy, young adult, and science fiction
+genre ratings.
+
+**TODO: Write up SVM**
+**TODO: Write up ROC, AUROC**
 
 While we were able to successfully cluster users in this project, there
 are still several potential areas for improvement. One issue was that by only
