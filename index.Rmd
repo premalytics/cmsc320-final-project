@@ -280,7 +280,7 @@ ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
 Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we simply take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.
 
 ```{r}
-set.seed(1234)
+set.seed(1234) #to make results/training data consistent and reproducible
 
 # Set up training data for cluster prediction
 training_data_ratings <- user_features_df %>%
@@ -302,7 +302,10 @@ training_data_pca %>%
 
 ### Random Forests
 
-Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **random forest**. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
+Now that we've generated our training data set, let's begin training our own ML model! First, we'll take a look at a very popular tree-based model known as **random forest**. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. Usually, at each "branch" of the tree, we choose one predictor/variable to determine the decision path the model will take next. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees. Here's a diagram to illustrate the entire process:
+![Example Random Forest: We generate multiple decision trees, and based off of the predictions aggregate and choose majority prediction](images/random_forest.png)
+
+Now here's an example using R's randomForest package to train a randomForest model:
 
 ```{r}
 # Training classification on dataframe using randomForest (n = 200):
@@ -312,7 +315,7 @@ rf_prediction <- randomForest(cluster ~ .,
                               data=training_data_ratings)
 ```
 
-Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:
+Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. Two main measures of predictor importance are Mean Decreased Error (MDE) which correlates to accuracy in predictions, and Mean Decrease Gini which helps determine important variables used in the actual splitting of decision trees. Note that these values are all for a categorical-based random forest model (our categories, remember, are the clusters generated before by k-means)
 
 ```{r, fig.align='center'}
 variable_importance <- importance(rf_prediction)
@@ -328,10 +331,8 @@ rf_predictors_importance %>%
   labs(title="Genres by Importance", y="Mean Decrease Accuracy", x="Genre")
 ```
 
-From the graph, it seems that ratings in certain genres such as realistic fiction and horror
-are able to better classify users.
+From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users by reducing error in classifying.
 
-**TODO: Talk about mean decrease accuracy and how it relates to importance?**
 
 ### Support Vector Machines
 
@@ -363,13 +364,15 @@ svm_prediction <- svm(cluster ~ .,
                       kernal="radial", 
                       gamma=0.1,
                       cost=10) #coefficients determined w/ help from guide
+#summary of SVM model stats:
+summary(svm_prediction)
 ```
 
-Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For
-this, we'll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according
+Looking at our model, we notice that we used 459 total support vectors, and you can also show from the summary the type of SVM classification we specified (C-Classification, most popularly used) and also the kernel function we used to reduce computing time (radial). 
+
+Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we'll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according
 to our previous random forest model) while keeping the others constant:
 
-**TODO: this graph needs to be made more clear**
 
 ```{r, fig.align='center'}
 # using plot() to visualize our hyperplane:
@@ -377,10 +380,10 @@ plot(svm_prediction, train_svm, realistic_fiction ~ horror,
           slice=list(fantasy = 3, mystery = 3, young_adult = 3, romance = 3, science_fiction = 3, thriller = 3))
 ```
 
-Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set
-and plotting a confusion matrix:
+From the plot above, we keep the predictors for all the other predictors constant (at rating = 3), and are now taking a look at how SVM is plotting a hyperplane between clusters for the two ratings: realistic_fiction and horror. The color gradients in the plot correspond to the clusters our SVM model predicts, and from here you can see the support vectors (the points on the plot) and the margins between the respective clusters. 
 
-**TODO: can talk about confusion matrix too**
+Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set and plotting a confusion matrix:
+
 
 ```{r}
 pred_svm <- predict(svm_prediction, test_svm)
@@ -388,6 +391,15 @@ pred_svm <- predict(svm_prediction, test_svm)
 table(test_svm$cluster, pred_svm)
 prop.table(table(test_svm$cluster, pred_svm), 1)
 ```
+
+From the above, we see interestingly that our model performed moderately well. While there were some misclassifications, for the most part the SVM model performed with >90% accuracy in classifying each of the 6 clusters. Now we can generate a more formal confusion matrix like so:
+**TODO: Implement CV folding w/ confusion matrix?**
+
+```{r}
+library(caret)
+confusionMatrix(pred_svm, test_svm$cluster)
+```
+Notice the our output, we call this the "confusion matrix", and it is simply a measure of accuracy and how many correctly classified objects were counted (notice also that the table generated is pretty much exactly similar to the previous table we self-generated). For our model, we created the confusion matrix using the testing data set from the previous 25% of the remaining calssification data.
 
 ### Evaluating Model Performance
 
@@ -412,11 +424,11 @@ evaluate_model <- function(training_data) {
 
   # iterate over folds for normal random forest data:
   rf_res <- sapply(seq_along(cv_partition),  function(i) {
-    # train the random forest using train() instead of randomForest, 10 trees
+    # train the random forest using train() instead of randomForest, 200 trees
     fit <- train(cluster ~ .,
                  data = training_data[-cv_partition[[i]],], # all but the holdout set
                  method = "rf",
-                 ntree = 10,
+                 ntree = 200,
                  trControl = fit_control)
     
     # make predictions on the holdout set
@@ -454,60 +466,11 @@ rf_ratings_res <- evaluate_model(training_data_ratings)
 rf_pca_res <- evaluate_model(training_data_pca)
 ```
 
-Now let's perform the exact same procedue on our PCA trained data set instead:
 
 Now that we've conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we've graphed below:
 
 **TODO: Write up + Explain more about AUC/ROC**
 
-```{r, eval = FALSE}
-# combine performance data for both models
-# into one data frame (adding column to indicate)
-# which model was used
-curve_df <- rf_normal_curve_df %>%
-  mutate(model="normal") %>%
-  rbind(mutate(rf_pca_curve_df, model="PCA")) %>%
-  mutate(model = factor(model, levels=c("normal", "PCA")))
-
-auc_df <- rf_normal_auc_df %>%
-  mutate(model="normal") %>%
-  rbind(mutate(rf_pca_auc_df, model="PCA")) %>%
-  mutate(model = factor(model, levels=c("normal", "PCA")))
-
-# plot distribution of 
-ggplot(auc_df, aes(x=model, y=auc)) +
-  geom_jitter(position=position_jitter(0.1)) +
-  coord_flip() + 
-  labs(title="AUC comparision",
-       x="Model",
-       y="Area under ROC curve")
-
-```
-
-We can also test for differences using linear regression:
-
-```{r, eval = FALSE}
-model_tab <- auc_df %>%
-  lm(auc~model,data=.) %>%
-  tidy() 
-
-model_tab %>%
-  knitr::kable()
-```
-
-Now let's compare ROC curves for both the regular training data and the PCA trained data set:
-
-```{r, eval = FALSE}
-curve_df %>%
-  group_by(model, fpr) %>%
-  summarize(tpr = mean(tpr)) %>%
-  ggplot(aes(x=fpr, y=tpr, color=model)) +
-    geom_line() +
-    labs(title = "ROC curves",
-         x = "False positive rate",
-         y = "True positive rate")
-
-```
 
 **TODO: Write up results for ROC Curves graph**
 
@@ -553,8 +516,7 @@ ratings across other genres.
 
 **TODO: Add more on predictions**
 
-Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be fantasy, young adult, and science fiction
-genre ratings.
+Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be realistic_fiction and horror genre ratings.
 
 **TODO: Write up SVM**
 
