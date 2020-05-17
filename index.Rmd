@@ -407,7 +407,9 @@ From the above, we see that random forest determined/calculated the importance o
 cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now,
 let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how
 well our model fits the dataset. For the next section, we'll be analyzing our random forest model on the raw training data set,
-and comparing that to our PCA-created data set and see the differences in performance.  
+and comparing that to our PCA-created data set and see the differences in performance. To do this, we've first introduced **5-fold cross validation**, a model evaluation technique where we basically divide up our training set into distinct pieces, sample each piece and them compare results to get an idea of the accuracy. In addition, we will also compare prediction accuracies for each model based off of the testing data set. 
+
+**TODO: Add confusion matrix/ROC curves**
 
 ```{r}
 set.seed(1234)
@@ -518,8 +520,8 @@ ratings across other genres.
 
 Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be realistic_fiction and horror genre ratings.
 
-**TODO: Write up SVM**
-
+**TODO: Add more on SVM**
+Using our Support Vector Machine model, we achieved very interesting accuracy with our testing data set. Overall, it suggests that perhaps SVM is a good model/fit for the classification problem.
 **TODO: Write up ROC, AUROC**
 
 While we were able to successfully cluster users in this project, there
