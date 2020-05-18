@@ -609,7 +609,8 @@ table(test_svm$cluster, pred_svm)</code></pre>
 ##   4 0.000000000 0.004081633 0.000000000 0.995918367 0.000000000 0.000000000
 ##   5 0.000000000 0.002222222 0.000000000 0.000000000 0.991111111 0.006666667
 ##   6 0.000000000 0.000000000 0.000000000 0.000000000 0.012048193 0.987951807</code></pre>
-<p>From the above, we see interestingly that our model performed moderately well. While there were some misclassifications, for the most part the SVM model performed with &gt;90% accuracy in classifying each of the 6 clusters. Now we can generate a more formal confusion matrix like so: <strong>TODO: Implement CV folding w/ confusion matrix?</strong></p>
+<p>From the above, we see interestingly that our model performed moderately well. While there were some misclassifications, for the most part the SVM model performed with &gt;90% accuracy in classifying each of the 6 clusters. Now we can generate a more formal confusion matrix like so:</p>
+<p><strong>TODO: Implement CV folding w/ confusion matrix?</strong></p>
 <pre class="r"><code>library(caret)
 confusionMatrix(pred_svm, test_svm$cluster)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
@@ -728,7 +729,9 @@ rf_pca_res &lt;- evaluate_model(training_data_pca)</code></pre>
 <p>Group 1 is another cluster with a specific qualitative description. The variation within this cluster is somewhat high and the cluster is located far away from other the other groups. This seems to indicate that there truly is a common group of readers that do not read realistic fiction, but they also likely vary in their average ratings across other genres.</p>
 <p><strong>TODO: Add more on predictions</strong></p>
 <p>Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most “important” predictors for classification seemed to be realistic_fiction and horror genre ratings.</p>
-<p><strong>TODO: Add more on SVM</strong> Using our Support Vector Machine model, we achieved very interesting accuracy with our testing data set. Overall, it suggests that perhaps SVM is a good model/fit for the classification problem. <strong>TODO: Write up ROC, AUROC</strong></p>
+<p><strong>TODO: Add more on SVM</strong></p>
+<p>Using our Support Vector Machine model, we achieved very interesting accuracy with our testing data set. Overall, it suggests that perhaps SVM is a good model/fit for the classification problem.</p>
+<p><strong>TODO: Write up ROC, AUROC</strong></p>
 <p>While we were able to successfully cluster users in this project, there are still several potential areas for improvement. One issue was that by only working with the average genre ratings for each user, we lost information about the variance of ratings within each genre per user. This means that certain users may have ended up in the same cluster because they had similar average ratings but still rate books differently in reality because the variation in how they rate was not accounted for.</p>
 <p>Another area that could have been improved was our clustering algorithm. K-means clustering was not able to find some of the smaller clusters in group 6, possibly due to a large amount of users in other locations which ended up occupying the algorithm. Since there were more data points densely packed in the area near groups 2 and 5, the centroids for K-means ended up gathering near there and ignoring smaller clusters elsewhere.</p>
 <p><strong>TODO: Talk more on improvements</strong></p>

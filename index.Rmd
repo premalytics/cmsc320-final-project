@@ -394,6 +394,7 @@ prop.table(table(test_svm$cluster, pred_svm), 1)
 ```
 
 From the above, we see interestingly that our model performed moderately well. While there were some misclassifications, for the most part the SVM model performed with >90% accuracy in classifying each of the 6 clusters. Now we can generate a more formal confusion matrix like so:
+
 **TODO: Implement CV folding w/ confusion matrix?**
 
 ```{r}
@@ -522,7 +523,9 @@ ratings across other genres.
 Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be realistic_fiction and horror genre ratings.
 
 **TODO: Add more on SVM**
+
 Using our Support Vector Machine model, we achieved very interesting accuracy with our testing data set. Overall, it suggests that perhaps SVM is a good model/fit for the classification problem.
+
 **TODO: Write up ROC, AUROC**
 
 While we were able to successfully cluster users in this project, there
