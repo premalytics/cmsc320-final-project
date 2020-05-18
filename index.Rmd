@@ -156,9 +156,6 @@ from both genres on a 2D scatterplot.
 
 ```{r, fig.align='center'}
 ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) + 
-# If you don't want to see user averages for users who have not rated books from either genre, uncomment the next two lines
-#  scale_x_continuous(limits = c(0, 5)) + 
-#  scale_y_continuous(limits = c(0, 5)) + 
   geom_point() +
   labs(
     title="User Average Ratings for Young Adult Versus Fantasy",
@@ -272,58 +269,75 @@ kmeans_res$centers %>%
   mutate_all(round, 2) %>%
   rmarkdown::paged_table()
 
-# PCA
-pca_res <- prcomp(user_features_df, center=TRUE, scale.=TRUE)
-plot_data <- pca_res$x[,1:2] %>%
-  as_tibble() %>%
-  mutate(cluster=factor(kmeans_res$cluster))
- 
-ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
-  geom_point() + 
+autoplot(kmeans_res, data=user_features_df, frame=TRUE) +
   labs(title="Readership Clusters")
 ```
 
+We can try to qualitatively summarize our clusters:
+
+  1. Rates average 4 in all genres but doesn't read realistic fiction
+  2. Rates average 4 in all genres
+  3. Rates average 3-4 in all genres but dislikes sci-fi and doesn't read horror
+  4. Rates average 4.5-5 in all genres
+  5. Rates average 3.5 in all genres 
+  6. Rates average 3 all genres
+
 ## Making Predictions
 
-Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.
+Now that we have done some analysis on our data and characterized Goodreads' users into clusters, let's see if we can
+predict which clusters users will land in using some basic machine learning (ML) techniques.
+
+In general, data is split into two classes for, one for training the model and the other for testing the model.
+Let's take a sample of our users and split them into training and testing data.
 
 ```{r}
 set.seed(1234)
 
 # Set up training data for cluster prediction	
-training_data_ratings <- user_features_df %>%
+user_sample <- user_features_df %>%
   mutate(cluster=factor(kmeans_res$cluster)) %>%
   sample_n(5000)
 
-# Setting up training data for PCA anlaysis
-training_data_pca <-  as.data.frame(predict(pca_res, training_data_ratings)) %>% as_tibble()
-training_data_pca$cluster <- training_data_ratings$cluster
-
-training_data_ratings %>%	
-  head(15) %>%	
-  rmarkdown::paged_table()
-
-training_data_pca %>%
-  head(15) %>%
-  rmarkdown::paged_table()
+# Split training-testing 3:1
+n <- nrow(user_sample)
+ntrain <- round(n*0.75)
+split_index <- sample(n, ntrain)
+train_data_ratings <- user_sample[split_index,]
+test_data_ratings <- user_sample[-split_index,]
 ```
+
+Now that we have split our data, let's use it to test to types of classification models, random forests and state vector machines.
 
 ### Random Forests	
 
-Now that we've generated our training data set, we can begin training our own machine learning (ML) model. First, we'll take a look at a popular tree-based model known as a [**random forest**](https://towardsdatascience.com/understanding-random-forest-58381e0602d2). In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
+First, we'll take a look at a popular tree-based model known as a
+[**random forest**](https://towardsdatascience.com/understanding-random-forest-58381e0602d2).
+Random forests are groups of decision trees used together to make classification decisions.
+For a given classification, every tree makes its own decision and all results are aggregated
+together at the end to determine the final classification. The benefit of using a random forest versus
+a single tree is that, generally, the random forest improves prediction results and reduces instability
+from using singular decision trees.
+
+![Random forest example](images/random_forest.png)
+
+Let us a train a random forest with 200 trees.
 
 ```{r}	
-# Training classification on dataframe using randomForest (n = 200):	
-rf_prediction <- randomForest(cluster ~ .,	
+rf_model <- randomForest(cluster ~ .,	
                               ntree=200,	
                               importance=TRUE,	
-                              data=training_data_ratings)	
+                              data=train_data_ratings)	
 ```	
 
-Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. The importance of each predictor is judged by the **Mean Decrease in Accuracy**, which is calculated as the decrease in accuracy when the predictor is removed from the model, allowing us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first predictor were removed, it would result in the model making on average more misclassifications than the second.
+Training a random forest model has the added benefit of allowing us to see which predictors are the most important for
+a classification decision.
+The importance of a predictor is determined using the **Mean Decrease in Accuracy**, which is the decrease
+in accuracy when the predictor is removed from the model, and allows us to see which predictors are the most influential.
+When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first
+predictor were removed, it would result in the model making on average more misclassifications than the second.
 
 ```{r, fig.align='center'}
-variable_importance <- importance(rf_prediction)
+variable_importance <- importance(rf_model)
 
 rf_predictors_importance <- variable_importance %>%
   as.data.frame() %>%
@@ -336,77 +350,62 @@ rf_predictors_importance %>%
   labs(title="Genres by Importance", y="Mean Decrease Accuracy", x="Genre")
 ```
 
-From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users by reducing error in classifying.
+Observing the graph, it seems that the average ratings for realistic fiction and horror are
+able to best able classify users since they show the greatest mean decrease in accuracy on
+removal.
 
 ### Support Vector Machines
 
-As an additional example, we'll also show how to train using a **support vector machine** (SVM) multi-classification model
-as an additional factor in our experiment below. The way SVM works, is to actually **increase dimension** as compared to PCA.
-Basically, we want to create a hyperplane - some n-dimensional vector that can effectively separate between multiple classes
-in the classification problem. As an example of how this work, consider a simple 2 group classification problem in 2D:
+The other model we are interested in is a **support vector machine** (SVM) multi-classification model.
+SVMs work by trying to increase the number of dimensions so it can divide clusters of points using a plane
+in n-dimensions called a hyperplane.
 
-![Example SVM: Moving from 2D coordinate space to 3D in order to better separate classification](images/svm_example.png)
+For instance, in the example below, by transforming the points in 2D to 3D, it becomes possible
+to partition the two clusters of points using a 3D plane whereas this would not have been possible
+with a line in 2D.
 
-In the example above, the 2D plot is circular, meaning there is no easy, linear division between the red and blue points.
-However, if we extend to 3D (by letting $z = x^2 + y^2$) we get a shape in 3D that we can divide using a plane. Notice
-that by translating this plane into 2D, we actually get a circle although in 3D it is "linear/planar". The "support vectors"
-in SVM refer to the data points closest to the hyperplane, which are used to help determine the hyperplane itself. In the next
-example, we use the ratings training data set to train our SVM model:
+![SVM Example: Increasing dimensions allows for an easier separation](images/svm_example.png)
+
+Let's train an SVM model.
 
 ```{r}
-set.seed(1234)    # Setting seed for reproducibility
+set.seed(1234)
 
-n <- nrow(training_data_ratings)  # Number of observations
-ntrain <- round(n*0.75)  # 75% for training set
-split_index <- sample(n, ntrain)   # Create a random index
-train_svm <- training_data_ratings[split_index,]   # Create training set
-test_svm <- training_data_ratings[-split_index,]   # Create test set
-
-svm_prediction <- svm(cluster ~ .,
-                      data=train_svm, 
+svm_model <- svm(cluster ~ .,
+                      data=train_data_ratings, 
                       method="C-classification",
                       kernal="radial", 
                       gamma=0.1,
-                      cost=10) #coefficients determined w/ help from guide
-#summary of SVM model stats:
-summary(svm_prediction)
+                      cost=10)
 ```
-
-Looking at our model, we notice that we used 459 total support vectors, and you can also show from the summary the type of SVM classification we specified (C-Classification, most popularly used) and also the kernel function we used to reduce computing time (radial). 
-
-Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we'll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according
-to our previous random forest model) while keeping the others constant:
-
-
-```{r, fig.align='center'}
-# using plot() to visualize our hyperplane:
-plot(svm_prediction, train_svm, realistic_fiction ~ horror,
-          slice=list(fantasy = 3, mystery = 3, young_adult = 3, romance = 3, science_fiction = 3, thriller = 3))
-```
-
-From the plot above, we keep the predictors for all the other predictors constant (at rating = 3), and are now taking a look at how SVM is plotting a hyperplane between clusters for the two ratings: realistic_fiction and horror. The color gradients in the plot correspond to the clusters our SVM model predicts, and from here you can see the support vectors (the points on the plot) and the margins between the respective clusters. 
 
 ### Comparing Models
 
-```{r}
-pred_svm <- predict(svm_prediction, test_svm)
+Now that we have both a random forest model and SVM, it would be useful to do
+some basic comparisons of between the two. One method of evaluating how good a
+model is can be done by looking at a **confusion matrix** of the test data. A
+confusion matrix tabulates the classifications made by a model with the predicted
+classes as rows and the true classes as columns.
 
-table(test_svm$cluster, pred_svm)
-prop.table(table(test_svm$cluster, pred_svm), 1)
+Let's plot both the confusion matrix for our random forest and SVM models
+on the test data.
+
+```{r}
+pred_rf <- predict(rf_model, test_data_ratings)
+table(pred_rf, test_data_ratings$cluster)
+
+pred_svm <- predict(svm_model, test_data_ratings)
+table(pred_svm, test_data_ratings$cluster)
 ```
+
+Cursory observation of both matrices seems to indicate that while
+both models are quite good at predicting clusters based on ratings,
+the SVM seems to display slightly higher accuracy over the random
+forest.
 
 ## Results and Discussion
 
 ### Clustering
-
-Let's try to qualitatively summarize our clusters:
-
-  1. Rates average 4 in all genres but doesn't read realistic fiction
-  2. Rates average 4 in all genres
-  3. Rates average 3-4 in all genres but dislikes SF and doesn't read horror
-  4. Rates average 4.5-5 in all genres
-  5. Rates average 3.5 in all genres 
-  6. Rates average 3 all genres
 
 Observing the graph of clusters, groups 2, 4, 5, and 6 appear to be located
 close to each other. Among the clusters, groups 1, 3, and 6 show the
