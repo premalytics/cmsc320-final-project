@@ -296,20 +296,20 @@ $(document).ready(function () {
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p><a href="https://www.goodreads.com">Goodreads</a> is a popular social cataloging website where users can search, track, and rate books. The site has over 20 million users and 50 million book reviews, making it a very large source of readership data.</p>
+<p><a href="https://www.goodreads.com">Goodreads</a> is a popular social cataloging website where users can search, track, and rate books. The site also offers a variety of recommendation services that provide users a way to find books relevant to their reading history. Since its foundation in 2006, the site’s userbase has grown to 20 million users with over 50 million book reviews, making it a very large <a href="https://github.com/zygmuntz/goodbooks-10k">source of readership data</a>.</p>
 <div class="figure">
 <img src="images/screenshot_01.png" alt="Goodreads site" />
 <p class="caption">Goodreads site</p>
 </div>
-<p>With so many users and reviews, an interesting experiment would be to see if we can characterize the readership of Goodreads using user ratings. Specifically we are interested in answering the question, “Based on user ratings data, can we find common groups of users by how they rate certain genres of books?” With such information, we would be able to see if, for instance, there is a large group of sci-fi fans or a large group of romance and YA fanatics that also happen to hate horror.</p>
+<p>With so many users and reviews, an interesting experiment would be to see if we can characterize the readership of Goodreads based on user ratings. Specifically we are interested in answering the question, “Based on user ratings data, can we find common groups of users by how they rate certain genres of books?” With such information, we would be able to see if, for instance, there is a large group of sci-fi fans or a large group of romance and young adult fanatics that also happen to hate horror.</p>
 <blockquote>
 <p>“Based on user ratings data, can we find common groups of users by how they rate certain genres of books?”</p>
 </blockquote>
-<p>In this project, we demonstrate the process of doing this kind of analysis from the ground up by leveraging and manipulating a subset of Goodreads’ data using the Goodbooks-10k dataset <span class="citation">(Zajac 2017)</span> and performing statistical and cluster analysis to try to try to paint a generalized picture of the site’s readership.</p>
+<p>In this project, we demonstrate the process of doing this kind of analysis from the ground up by leveraging and manipulating a subset of Goodreads’ data using the <a href="https://github.com/zygmuntz/goodbooks-10k">Goodbooks-10k dataset</a> <span class="citation">(Zajac 2017)</span> and performing statistical and <a href="https://www.statisticssolutions.com/directory-of-statistical-analyses-cluster-analysis/">cluster analysis</a> to try to try to paint a generalized picture of the site’s readership.</p>
 </div>
 <div id="understanding-and-pre-processing-the-data" class="section level2">
 <h2>Understanding and Pre-processing the Data</h2>
-<p>The Goodbooks-10k data obtained from GitHub consists of several CSV files with information about the top 10,000 most rated books on Goodreads, including book metadata, tags, and relevant user ratings.</p>
+<p>The Goodbooks-10k data obtained from <a href="https://github.com/zygmuntz/goodbooks-10k">GitHub</a> consists of several CSV files with information about the top 10,000 most rated books on Goodreads, including book metadata, tags, and relevant user ratings.</p>
 <p>The CSV files can be easily loaded using R’s <code>read.csv</code> method. For example, here we load and display <code>books.csv</code> to get a broad picture of one of the datasets we will be working with. We can see that <code>books.csv</code> organizes its data in a tabulated manner with each book as a row and each book attribute as a column.</p>
 <pre class="r"><code>books_df &lt;- read.csv(&quot;./goodbooks-10k/books.csv&quot;) %&gt;%
   as_tibble()
@@ -327,7 +327,7 @@ tags_df &lt;- read.csv(&quot;./goodbooks-10k/tags.csv&quot;)%&gt;%
   as_tibble()
 book_tags_df &lt;- read.csv(&quot;./goodbooks-10k/book_tags.csv&quot;)%&gt;%
   as_tibble()</code></pre>
-<p>With our data loaded, we can begin to do some data manipulation. Since we are interested in analyzing various genres, let’s start by narrowing down <code>tags_df</code> with the genre tags we are interested in. We can do this using a <strong>pipeline</strong> as shown below.</p>
+<p>With our data loaded, we can begin to do some data manipulation. Since we are interested in analyzing various genres, let’s start by narrowing down the tags dataframe, <code>tags_df</code>, with the genre tags we are interested in. We can do this using a <a href="https://cfss.uchicago.edu/notes/pipes/"><strong>pipeline</strong></a> as shown below.</p>
 <pre class="r"><code>tags_df &lt;- tags_df %&gt;%
   filter(tag_name %in% c(
     &quot;fantasy&quot;,
@@ -348,7 +348,7 @@ tags_df %&gt;%
 {"columns":[{"label":["tag_id"],"name":[1],"type":["int"],"align":["right"]},{"label":["tag_name"],"name":[2],"type":["fctr"],"align":["left"]}],"data":[{"1":"11305","2":"fantasy"},{"1":"14821","2":"horror"},{"1":"20939","2":"mystery"},{"1":"25438","2":"realistic-fiction"},{"1":"26138","2":"romance"},{"1":"26837","2":"science-fiction"},{"1":"30358","2":"thriller"},{"1":"33114","2":"young-adult"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-<p>However, this tag information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by <strong>joining</strong> data across different data frames through a common attribute. We construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>. From there, we then link <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>.</p>
+<p>However, this tag information is not very helpful by itself. We want to be able to use it in conjunction with the other data we have. One way to accomplish this is by <a href="http://www.datasciencemadesimple.com/join-in-r-merge-in-r/"><strong>joining</strong></a> data across different data frames through a common attribute. We construct a pipeline to link data from <code>books_df</code> and <code>book_tags_df</code> through the shared attribute, <code>goodreads_book_id</code>. From there, we then link <code>book_tags_df</code> and <code>tags_df</code> through <code>tag_id</code>, creating a new dataframe with an entry for each book’s genre tag.</p>
 <pre class="r"><code>book_genres_df &lt;- books_df %&gt;%
   inner_join(book_tags_df, by=&quot;goodreads_book_id&quot;) %&gt;%
   inner_join(tags_df, by=&quot;tag_id&quot;) %&gt;%
@@ -364,7 +364,7 @@ book_genres_df %&gt;%
   </script>
 </div>
 <p>From the resulting data frame, we can see that <code>tag_name</code> does indeed describe the genre of books it is associated with.</p>
-<p>Let’s build another pipeline to join with <code>ratings_df</code> and link users with the genres of the books they rated. We can do a summary on the data frame from there to end up with a table of mean ratings in each genre of interest for all users. These ratings range from 1 to 5, with a mean rating of -5 to mark genres with no rating.</p>
+<p>In order to answer our question, we need to collate data on how users review books from certain genres. To do so, let’s build another pipeline to join with <code>ratings_df</code> and link users with the genres of the books they rated. We can do a summary on the data frame from there to end up with a table of mean ratings in each genre of interest for all users. These ratings range from 1 to 5, with a mean rating of -5 to mark genres with no rating.</p>
 <pre class="r"><code># Note: This takes awhile to run...
 
 user_features_raw_df &lt;- ratings_df %&gt;%
@@ -394,7 +394,10 @@ head(user_features_df, 15) %&gt;%
 <h2>Visualization and Analysis</h2>
 <p>Now that we have transformed the original data into a data frame of average genre ratings for all users, we can begin analyzing users based on genre ratings.</p>
 <p>One way to better understand data in general is through visualization. For example, if we want to see where the readership lies on ratings for young adult versus fantasy, we can do so by plotting the average ratings from both genres on a 2D scatterplot.</p>
-<pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) +
+<pre class="r"><code>ggplot(user_features_df, mapping=aes(x=fantasy, y=young_adult)) + 
+# If you don&#39;t want to see user averages for users who have not rated books from either genre, uncomment the next two lines
+#  scale_x_continuous(limits = c(0, 5)) + 
+#  scale_y_continuous(limits = c(0, 5)) + 
   geom_point() +
   labs(
     title=&quot;User Average Ratings for Young Adult Versus Fantasy&quot;,
@@ -406,13 +409,13 @@ head(user_features_df, 15) %&gt;%
 <div id="clustering-for-higher-dimensions" class="section level3">
 <h3>Clustering for Higher Dimensions</h3>
 <p>While a 2D graph is fine for comparing two genres, it becomes harder to visualize data like this beyond 3 variables since we run out of spatial dimensions. Furthermore, we are also interested in clustering our data. While we had done a very cursory grouping by eye-balling the data above, ideally, there should be a way to more formally say which data points form a group with one another.</p>
-<p>The solution to both of these problems is found in two methods known as <strong>K-means clustering</strong> and <strong>principal component analysis (PCA)</strong>.</p>
+<p>The solution to both of these problems is found in two methods known as <a href="https://towardsdatascience.com/understanding-k-means-clustering-in-machine-learning-6a6e67336aa1"><strong>K-means clustering</strong></a> and <a href="https://towardsdatascience.com/a-one-stop-shop-for-principal-component-analysis-5582fb7e0a9c"><strong>principal component analysis (PCA)</strong></a>.</p>
 <p>K-means clustering is a way to cluster, or group, data points. The algorithm designates K centroids representing the centers of their respective clusters. Each data point is assigned to the closest centroid, and the algorithm iteratively optimizes the centroids to try to reduce the total distance between it and all the points in its cluster.</p>
 <div class="figure">
 <img src="images/kmeans_iris.png" alt="K-means on iris flower species" />
 <p class="caption">K-means on iris flower species</p>
 </div>
-<p>Meanwhile, PCA is a way to reduce the dimensions in high-dimensional data while still trying to preserve features from the original space. Roughly, PCA tries to find a set of linear transformations from the original data that prioritizes maximizing variance for each dimension of the transformed data. At the end, the first two dimensions of the transformed data will ideally encode enough of the variance from the original high-dimensional data that graphing only those two dimensions should suffice in representing the original data, making PCA a very useful tool for visualization.</p>
+<p>Meanwhile, principal component analysis (PCA) is a way to reduce the dimensions in high-dimensional data while still trying to preserve features from the original space. Roughly, PCA tries to find a set of linear transformations from the original data that prioritizes maximizing variance for each dimension of the transformed data. At the end, the first two dimensions of the transformed data will ideally encode enough of the variance from the original high-dimensional data that graphing only those two dimensions should suffice in representing the original data, making PCA a very useful tool for visualization.</p>
 <div class="figure">
 <img src="images/pcafish.png" alt="Example PCA: The transformed coordinate system in red maximizes the variance of the pixel locations." />
 <p class="caption">Example PCA: The transformed coordinate system in red maximizes the variance of the pixel locations.</p>
@@ -459,7 +462,7 @@ ggplot(mapping=aes(x=k_range, y=sil)) +
     y=&quot;Average Silhouette&quot;
   )</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-7-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>Observing both graphs, K = 6 appears to be a point where total SSE has begun to flatten but average silhouette is still somewhat high, making it a reasonable compromise for K. With K in hand, we can run K-means clustering on the full data now and graph using PCA.</p>
+<p>Observing both graphs, K = 6 appears to be a point where total SSE has begun to flatten but average silhouette is still somewhat high, making it a reasonable compromise for K. Above K = 6, the total SSE does decrease, but not significantly enough to warrant a corresponding decrease in average silhouette. With K in hand, we can run K-means clustering on the full data now and graph using PCA.</p>
 <pre class="r"><code>set.seed(320)
 
 kmeans_res &lt;- kmeans(user_features_df, 6)
@@ -486,28 +489,25 @@ ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
 </div>
 <div id="making-predictions" class="section level2">
 <h2>Making Predictions</h2>
-<p>Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we simply take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a <strong>training data frame</strong>. Notice also here that we’re also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We’ve also included a graph of the PC’s and how they correspond to clustering with the k-means algorithm.</p>
-<pre class="r"><code>set.seed(1234)
-
-# Set up training data for cluster prediction
-training_data_ratings &lt;- user_features_df %&gt;%
-  mutate(cluster=factor(kmeans_res$cluster)) %&gt;%
-  sample_n(5000) #otherwise we have way too much data, can also try &lt; 10k
-
-# Setting up training data for PCA anlaysis
-training_data_pca &lt;-  as.data.frame(predict(pca_res, training_data_ratings)) %&gt;% as_tibble()
-training_data_pca$cluster &lt;- training_data_ratings$cluster
-
-training_data_ratings %&gt;%
-  head(15) %&gt;%
-  rmarkdown::paged_table()</code></pre>
+<p>Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a <strong>training data frame</strong>. Notice also here that we’re also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We’ve also included a graph of the PC’s and how they correspond to clustering with the k-means algorithm.</p>
+<pre class="r"><code>set.seed(1234)  
+# Set up training data for cluster prediction   
+training_data_ratings &lt;- user_features_df %&gt;%   
+  mutate(cluster=factor(kmeans_res$cluster)) %&gt;%    
+  sample_n(5000) #otherwise we have way too much data, can also try &lt; 10k   
+# Setting up training data for PCA anlaysis 
+training_data_pca &lt;-  as.data.frame(predict(pca_res, training_data_ratings)) %&gt;% as_tibble()    
+training_data_pca$cluster &lt;- training_data_ratings$cluster  
+training_data_ratings %&gt;%   
+  head(15) %&gt;%  
+  rmarkdown::paged_table()  </code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["fantasy"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["horror"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["mystery"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["realistic_fiction"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["romance"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["science_fiction"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["thriller"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["young_adult"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["cluster"],"name":[9],"type":["fctr"],"align":["left"]}],"data":[{"1":"4.000000","2":"4.200000","3":"4.137931","4":"4.090909","5":"3.956522","6":"3.833333","7":"3.772727","8":"4.068182","9":"2"},{"1":"4.346154","2":"4.583333","3":"4.258065","4":"4.375000","5":"4.114286","6":"4.388889","7":"4.200000","8":"4.357143","9":"4"},{"1":"2.542373","2":"1.750000","3":"2.866667","4":"3.023810","5":"2.710744","6":"2.555556","7":"4.000000","8":"2.764706","9":"6"},{"1":"3.250000","2":"3.208333","3":"3.277778","4":"3.210526","5":"3.470588","6":"3.263158","7":"3.355769","8":"3.531250","9":"5"},{"1":"4.294118","2":"4.000000","3":"3.954545","4":"4.090909","5":"4.026316","6":"4.200000","7":"3.823529","8":"4.388889","9":"2"},{"1":"3.611765","2":"3.611111","3":"3.478261","4":"3.266667","5":"3.238095","6":"3.606061","7":"3.350000","8":"3.512821","9":"5"},{"1":"3.923077","2":"3.666667","3":"4.102564","4":"4.215385","5":"4.146667","6":"3.736842","7":"3.800000","8":"4.115789","9":"2"},{"1":"3.642857","2":"3.375000","3":"3.620000","4":"3.517241","5":"3.230769","6":"3.500000","7":"3.589744","8":"4.066667","9":"5"},{"1":"3.400000","2":"3.333333","3":"3.148936","4":"3.279070","5":"3.283582","6":"3.416667","7":"2.892857","8":"3.333333","9":"5"},{"1":"4.392157","2":"4.080000","3":"4.159091","4":"4.333333","5":"4.166667","6":"4.421053","7":"4.148936","8":"4.375000","9":"2"},{"1":"4.323944","2":"3.857143","3":"4.432432","4":"4.066667","5":"4.509091","6":"4.300000","7":"4.426471","8":"4.555556","9":"4"},{"1":"4.075758","2":"4.000000","3":"3.861111","4":"4.000000","5":"3.894737","6":"4.100000","7":"4.111111","8":"4.000000","9":"2"},{"1":"3.419355","2":"3.437500","3":"3.433333","4":"3.700000","5":"3.357143","6":"3.418182","7":"3.378788","8":"3.400000","9":"5"},{"1":"2.428571","2":"3.000000","3":"2.571429","4":"3.250000","5":"3.066667","6":"2.000000","7":"3.000000","8":"2.904762","9":"6"},{"1":"4.543478","2":"4.666667","3":"4.516667","4":"4.608696","5":"4.189189","6":"4.516129","7":"4.509091","8":"4.487179","9":"4"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-<pre class="r"><code>training_data_pca %&gt;%
-  head(15) %&gt;%
+<pre class="r"><code>training_data_pca %&gt;%   
+  head(15) %&gt;%  
   rmarkdown::paged_table()</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
@@ -516,13 +516,13 @@ training_data_ratings %&gt;%
 </div>
 <div id="random-forests" class="section level3">
 <h3>Random Forests</h3>
-<p>Now that we’ve generated our training data set, let’s begin training our own ML model! First, we’ll take a look at a very popular tree-based model known as <strong>random forest</strong>. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.</p>
-<pre class="r"><code># Training classification on dataframe using randomForest (n = 200):
-rf_prediction &lt;- randomForest(cluster ~ .,
-                              ntree=200,
-                              importance=TRUE,
-                              data=training_data_ratings)</code></pre>
-<p>Now that we’ve generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor:</p>
+<p>Now that we’ve generated our training data set, we can begin training our own machine learning (ML) model. First, we’ll take a look at a very popular tree-based model known as <a href="https://towardsdatascience.com/understanding-random-forest-58381e0602d2"><strong>random forest</strong></a>. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.</p>
+<pre class="r"><code># Training classification on dataframe using randomForest (n = 200):    
+rf_prediction &lt;- randomForest(cluster ~ .,  
+                              ntree=200,    
+                              importance=TRUE,  
+                              data=training_data_ratings)   </code></pre>
+<p>Now that we’ve generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. The importance of each predictor is judged by the <strong>Mean Decrease in Accuracy</strong>, which is calculated as the decrease in accuracy when the predictor is removed from the model, allowing us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first predictor were removed, it would result in the model making on average more misclassifications than the second.</p>
 <pre class="r"><code>variable_importance &lt;- importance(rf_prediction)
 
 rf_predictors_importance &lt;- variable_importance %&gt;%
@@ -535,8 +535,7 @@ rf_predictors_importance %&gt;%
   coord_flip() +
   labs(title=&quot;Genres by Importance&quot;, y=&quot;Mean Decrease Accuracy&quot;, x=&quot;Genre&quot;)</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users.</p>
-<p><strong>TODO: Talk about mean decrease accuracy and how it relates to importance?</strong></p>
+<p>From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users by reducing error in classifying.</p>
 </div>
 <div id="support-vector-machines" class="section level3">
 <h3>Support Vector Machines</h3>
@@ -559,15 +558,37 @@ svm_prediction &lt;- svm(cluster ~ .,
                       method=&quot;C-classification&quot;,
                       kernal=&quot;radial&quot;, 
                       gamma=0.1,
-                      cost=10) #coefficients determined w/ help from guide</code></pre>
+                      cost=10) #coefficients determined w/ help from guide
+#summary of SVM model stats:
+summary(svm_prediction)</code></pre>
+<pre><code>## 
+## Call:
+## svm(formula = cluster ~ ., data = train_svm, method = &quot;C-classification&quot;, 
+##     kernal = &quot;radial&quot;, gamma = 0.1, cost = 10)
+## 
+## 
+## Parameters:
+##    SVM-Type:  C-classification 
+##  SVM-Kernel:  radial 
+##        cost:  10 
+## 
+## Number of Support Vectors:  459
+## 
+##  ( 139 150 65 71 23 11 )
+## 
+## 
+## Number of Classes:  6 
+## 
+## Levels: 
+##  1 2 3 4 5 6</code></pre>
+<p>Looking at our model, we notice that we used 459 total support vectors, and you can also show from the summary the type of SVM classification we specified (C-Classification, most popularly used) and also the kernel function we used to reduce computing time (radial).</p>
 <p>Now we can visualize our hyperplane and the way our SVM model is classifying using an in-built function for SVM. For this, we’ll consider the differences between ratings for realistic fiction and horror (2 predictors of importance according to our previous random forest model) while keeping the others constant:</p>
-<p><strong>TODO: this graph needs to be made more clear</strong></p>
 <pre class="r"><code># using plot() to visualize our hyperplane:
 plot(svm_prediction, train_svm, realistic_fiction ~ horror,
           slice=list(fantasy = 3, mystery = 3, young_adult = 3, romance = 3, science_fiction = 3, thriller = 3))</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>From the plot above, we keep the predictors for all the other predictors constant (at rating = 3), and are now taking a look at how SVM is plotting a hyperplane between clusters for the two ratings: realistic_fiction and horror. The color gradients in the plot correspond to the clusters our SVM model predicts, and from here you can see the support vectors (the points on the plot) and the margins between the respective clusters.</p>
 <p>Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set and plotting a confusion matrix:</p>
-<p><strong>TODO: can talk about confusion matrix too</strong></p>
 <pre class="r"><code>pred_svm &lt;- predict(svm_prediction, test_svm)
 
 table(test_svm$cluster, pred_svm)</code></pre>
@@ -588,10 +609,48 @@ table(test_svm$cluster, pred_svm)</code></pre>
 ##   4 0.000000000 0.004081633 0.000000000 0.995918367 0.000000000 0.000000000
 ##   5 0.000000000 0.002222222 0.000000000 0.000000000 0.991111111 0.006666667
 ##   6 0.000000000 0.000000000 0.000000000 0.000000000 0.012048193 0.987951807</code></pre>
+<p>From the above, we see interestingly that our model performed moderately well. While there were some misclassifications, for the most part the SVM model performed with &gt;90% accuracy in classifying each of the 6 clusters. Now we can generate a more formal confusion matrix like so: <strong>TODO: Implement CV folding w/ confusion matrix?</strong></p>
+<pre class="r"><code>library(caret)
+confusionMatrix(pred_svm, test_svm$cluster)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   1   2   3   4   5   6
+##          1  20   0   0   0   0   0
+##          2   0 439   0   1   1   0
+##          3   0   0  11   0   0   0
+##          4   0   0   0 244   0   0
+##          5   0   1   0   0 446   1
+##          6   0   0   1   0   3  82
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9936          
+##                  95% CI : (0.9874, 0.9972)
+##     No Information Rate : 0.36            
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9909          
+##                                           
+##  Mcnemar&#39;s Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: 1 Class: 2 Class: 3 Class: 4 Class: 5 Class: 6
+## Sensitivity             1.000   0.9977   0.9167   0.9959   0.9911   0.9880
+## Specificity             1.000   0.9975   1.0000   1.0000   0.9975   0.9966
+## Pos Pred Value          1.000   0.9955   1.0000   1.0000   0.9955   0.9535
+## Neg Pred Value          1.000   0.9988   0.9992   0.9990   0.9950   0.9991
+## Prevalence              0.016   0.3520   0.0096   0.1960   0.3600   0.0664
+## Detection Rate          0.016   0.3512   0.0088   0.1952   0.3568   0.0656
+## Detection Prevalence    0.016   0.3528   0.0088   0.1952   0.3584   0.0688
+## Balanced Accuracy       1.000   0.9976   0.9583   0.9980   0.9943   0.9923</code></pre>
+<p>Notice the our output, we call this the “confusion matrix”, and it is simply a measure of accuracy and how many correctly classified objects were counted (notice also that the table generated is pretty much exactly similar to the previous table we self-generated). For our model, we created the confusion matrix using the testing data set from the previous 25% of the remaining calssification data.</p>
 </div>
 <div id="evaluating-model-performance" class="section level3">
 <h3>Evaluating Model Performance</h3>
-<p>From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let’s analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we’ll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance.</p>
+<p>From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let’s analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we’ll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance. To do this, we’ve first introduced <strong>5-fold cross validation</strong>, a model evaluation technique where we basically divide up our training set into distinct pieces, sample each piece and them compare results to get an idea of the accuracy. In addition, we will also compare prediction accuracies for each model based off of the testing data set.</p>
+<p><strong>TODO: Add confusion matrix/ROC curves</strong></p>
 <pre class="r"><code>set.seed(1234)
 
 # setup training parameters
@@ -606,11 +665,11 @@ evaluate_model &lt;- function(training_data) {
 
   # iterate over folds for normal random forest data:
   rf_res &lt;- sapply(seq_along(cv_partition),  function(i) {
-    # train the random forest using train() instead of randomForest, 10 trees
+    # train the random forest using train() instead of randomForest, 200 trees
     fit &lt;- train(cluster ~ .,
                  data = training_data[-cv_partition[[i]],], # all but the holdout set
                  method = &quot;rf&quot;,
-                 ntree = 10,
+                 ntree = 200,
                  trControl = fit_control)
     
     # make predictions on the holdout set
@@ -646,45 +705,8 @@ evaluate_model &lt;- function(training_data) {
 
 rf_ratings_res &lt;- evaluate_model(training_data_ratings)
 rf_pca_res &lt;- evaluate_model(training_data_pca)</code></pre>
-<p>Now let’s perform the exact same procedue on our PCA trained data set instead:</p>
 <p>Now that we’ve conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we’ve graphed below:</p>
 <p><strong>TODO: Write up + Explain more about AUC/ROC</strong></p>
-<pre class="r"><code># combine performance data for both models
-# into one data frame (adding column to indicate)
-# which model was used
-curve_df &lt;- rf_normal_curve_df %&gt;%
-  mutate(model=&quot;normal&quot;) %&gt;%
-  rbind(mutate(rf_pca_curve_df, model=&quot;PCA&quot;)) %&gt;%
-  mutate(model = factor(model, levels=c(&quot;normal&quot;, &quot;PCA&quot;)))
-
-auc_df &lt;- rf_normal_auc_df %&gt;%
-  mutate(model=&quot;normal&quot;) %&gt;%
-  rbind(mutate(rf_pca_auc_df, model=&quot;PCA&quot;)) %&gt;%
-  mutate(model = factor(model, levels=c(&quot;normal&quot;, &quot;PCA&quot;)))
-
-# plot distribution of 
-ggplot(auc_df, aes(x=model, y=auc)) +
-  geom_jitter(position=position_jitter(0.1)) +
-  coord_flip() + 
-  labs(title=&quot;AUC comparision&quot;,
-       x=&quot;Model&quot;,
-       y=&quot;Area under ROC curve&quot;)</code></pre>
-<p>We can also test for differences using linear regression:</p>
-<pre class="r"><code>model_tab &lt;- auc_df %&gt;%
-  lm(auc~model,data=.) %&gt;%
-  tidy() 
-
-model_tab %&gt;%
-  knitr::kable()</code></pre>
-<p>Now let’s compare ROC curves for both the regular training data and the PCA trained data set:</p>
-<pre class="r"><code>curve_df %&gt;%
-  group_by(model, fpr) %&gt;%
-  summarize(tpr = mean(tpr)) %&gt;%
-  ggplot(aes(x=fpr, y=tpr, color=model)) +
-    geom_line() +
-    labs(title = &quot;ROC curves&quot;,
-         x = &quot;False positive rate&quot;,
-         y = &quot;True positive rate&quot;)</code></pre>
 <p><strong>TODO: Write up results for ROC Curves graph</strong></p>
 </div>
 </div>
@@ -705,9 +727,8 @@ model_tab %&gt;%
 <p>Group 3 is also an interesting case. The cluster has large variation and a somewhat specific qualitative description. Moreover, informal observation of the cluster graph seems to show smaller clusters within this group as well. This seems to indicate that while the users in this group generally have the qualitative characteristics as described above in common, there are still sub-groups within this cluster that have varying defining characteristics from each other.</p>
 <p>Group 1 is another cluster with a specific qualitative description. The variation within this cluster is somewhat high and the cluster is located far away from other the other groups. This seems to indicate that there truly is a common group of readers that do not read realistic fiction, but they also likely vary in their average ratings across other genres.</p>
 <p><strong>TODO: Add more on predictions</strong></p>
-<p>Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most “important” predictors for classification seemed to be fantasy, young adult, and science fiction genre ratings.</p>
-<p><strong>TODO: Write up SVM</strong></p>
-<p><strong>TODO: Write up ROC, AUROC</strong></p>
+<p>Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most “important” predictors for classification seemed to be realistic_fiction and horror genre ratings.</p>
+<p><strong>TODO: Add more on SVM</strong> Using our Support Vector Machine model, we achieved very interesting accuracy with our testing data set. Overall, it suggests that perhaps SVM is a good model/fit for the classification problem. <strong>TODO: Write up ROC, AUROC</strong></p>
 <p>While we were able to successfully cluster users in this project, there are still several potential areas for improvement. One issue was that by only working with the average genre ratings for each user, we lost information about the variance of ratings within each genre per user. This means that certain users may have ended up in the same cluster because they had similar average ratings but still rate books differently in reality because the variation in how they rate was not accounted for.</p>
 <p>Another area that could have been improved was our clustering algorithm. K-means clustering was not able to find some of the smaller clusters in group 6, possibly due to a large amount of users in other locations which ended up occupying the algorithm. Since there were more data points densely packed in the area near groups 2 and 5, the centroids for K-means ended up gathering near there and ignoring smaller clusters elsewhere.</p>
 <p><strong>TODO: Talk more on improvements</strong></p>
