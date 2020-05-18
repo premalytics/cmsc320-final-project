@@ -332,7 +332,7 @@ Now that we've generated our training data set, let's begin training our own ML 
 Now here's an example using R's randomForest package to train a randomForest model:
 =======
 Now that we've generated our training data set, we can begin training our own machine learning (ML) model. First, we'll take a look at a very popular tree-based model known as [**random forest**](https://towardsdatascience.com/understanding-random-forest-58381e0602d2). In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
-
+>>>>>>> 1b4c4e41df0db6896e3b3bdb3c3f6f37fc4833f5
 
 ```{r}	
 # Training classification on dataframe using randomForest (n = 200):	
@@ -346,7 +346,7 @@ rf_prediction <- randomForest(cluster ~ .,
 Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. Two main measures of predictor importance are Mean Decreased Error (MDE) which correlates to accuracy in predictions, and Mean Decrease Gini which helps determine important variables used in the actual splitting of decision trees. Note that these values are all for a categorical-based random forest model (our categories, remember, are the clusters generated before by k-means)
 =======
 Now that we've generated our random forest model using all of our elements/predictors (the ratings of each genre) and sampling 200 decision trees, we can now take a look at the actual importance of each predictor. The importance of each predictor is judged by the **Mean Decrease in Accuracy**, which is calculated as the decrease in accuracy when the predictor is removed from the model, allowing us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first predictor were removed, it would result in the model making on average more misclassifications than the second.
-
+>>>>>>> 1b4c4e41df0db6896e3b3bdb3c3f6f37fc4833f5
 
 ```{r, fig.align='center'}
 variable_importance <- importance(rf_prediction)
@@ -364,7 +364,10 @@ rf_predictors_importance %>%
 
 From the graph, it seems that ratings in certain genres such as realistic fiction and horror are able to better classify users by reducing error in classifying.
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 1b4c4e41df0db6896e3b3bdb3c3f6f37fc4833f5
 ### Support Vector Machines
 
 As an additional example, we'll also show how to train using a **support vector machine** (SVM) multi-classification model
