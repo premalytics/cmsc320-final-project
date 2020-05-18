@@ -518,9 +518,7 @@ other the other groups. This seems to indicate that there truly is a common grou
 of readers that do not read realistic fiction, but they also likely vary in their average
 ratings across other genres.
 
-**TODO: Add more on predictions**
-
-Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most "important" predictors for classification seemed to be realistic_fiction and horror genre ratings.
+Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that the most "important" predictors for classification seemed to be realistic_fiction and horror genre ratings. This result makes sense when considering how our clusters are separated. While most of the K-means clusters we generated seemed to depends less upon average user ratings for specific genres than their average ratings across all genres, cluster 1 seems to made up of users that don't read or review realistic fiction books and cluster 3 seems to be made up of users that dislike science fiction and don't review horror books. Those extra genre conditions, realistic fiction, science fiction, and horror correspond with with 3 of the top 4 most important predictors according to our random forest model.
 
 **TODO: Add more on SVM**
 
