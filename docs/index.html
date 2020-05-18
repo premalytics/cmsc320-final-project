@@ -516,7 +516,7 @@ test_data_ratings &lt;- user_sample[-split_index,]</code></pre>
                               ntree=200,    
                               importance=TRUE,  
                               data=train_data_ratings)  </code></pre>
-<p>Training a random forest model has the added benefit of allowing us to see which predictors are the most important for a classification decision. The importance of a predictor is determined using the <strong>mean decrease in accuracy</strong>. Mean decrease in accuracy of a predictor is the decrease in accuracy when the predictor is removed from the model and allows us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first predictor were removed, it would result in the model making on average more misclassifications than if the second predictor were removed.</p>
+<p>Training a random forest model has the added benefit of allowing us to see which predictors are the most important for a classification decision. The importance of a predictor is determined using the <strong>mean decrease in accuracy</strong> <span class="citation">(Hoare, n.d.)</span>. Mean decrease in accuracy of a predictor is the decrease in accuracy when the predictor is removed from the model and allows us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first predictor were removed, it would result in the model making on average more misclassifications than if the second predictor were removed.</p>
 <p>We extract and plot the mean decrease in accuracy for all genres in the following:</p>
 <pre class="r"><code>variable_importance &lt;- importance(rf_model)
 
@@ -534,7 +534,7 @@ rf_predictors_importance %&gt;%
 </div>
 <div id="support-vector-machines" class="section level3">
 <h3>Support Vector Machines</h3>
-<p>The other model we are interested in is a <strong>support vector machine (SVM)</strong> multi-classification model. SVMs work by trying to increase the number of dimensions so it can divide clusters of points using a plane in n-dimensions called a <strong>hyperplane</strong>.</p>
+<p>The other model we are interested in is a <strong>support vector machine (SVM)</strong> multi-classification model. SVMs work by trying to increase the number of dimensions so it can divide clusters of points using a plane in n-dimensions called a <strong>hyperplane</strong> <span class="citation">(Gutierrez 2018)</span>.</p>
 <p>For instance, in the example below, by transforming the points in 2D to 3D, it becomes possible to partition the two clusters of points using a 3D plane whereas this would not have been possible with a line in 2D.</p>
 <div class="figure">
 <img src="images/svm_example.png" alt="SVM Example: Increasing dimensions allows for a clear separation" />
@@ -618,6 +618,12 @@ table(pred_svm, test_data_ratings$cluster)</code></pre>
 </div>
 <div id="ref-kmeansTDS">
 <p>Dabbura, Imad. 2018. “Applications, Evaluation Methods, and Drawbacks.” <em>Towards Data Science</em>.</p>
+</div>
+<div id="ref-svmMultiClassification">
+<p>Gutierrez, Daniel. 2018. “Build a Multi-Class Support Vector Machine in R.” <em>ODSC Modelling</em>.</p>
+</div>
+<div id="ref-randomForestVariableImportance">
+<p>Hoare, Jake. n.d. “How Is Variable Importance Calculated for a Random Forest?”</p>
 </div>
 <div id="ref-goodbooks2017">
 <p>Zajac, Zygmunt. 2017. “Goodbooks-10k: A New Dataset for Book Recommendations.” <em>FastML</em>.</p>

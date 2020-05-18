@@ -332,9 +332,10 @@ rf_model <- randomForest(cluster ~ .,
 
 Training a random forest model has the added benefit of allowing us to see which predictors are the most important for
 a classification decision.
-The importance of a predictor is determined using the **mean decrease in accuracy**. Mean decrease in accuracy of a predictor is the decrease
-in accuracy when the predictor is removed from the model and allows us to see which predictors are the most influential.
-When comparing mean decrease in accuracy, a larger mean decrease for one predictor over another means that if the first
+The importance of a predictor is determined using the **mean decrease in accuracy** [@randomForestVariableImportance].
+Mean decrease in accuracy of a predictor is the decrease in accuracy when the predictor is removed from the model and
+allows us to see which predictors are the most influential. When comparing mean decrease in accuracy, a larger mean decrease
+for one predictor over another means that if the first
 predictor were removed, it would result in the model making on average more misclassifications than if the second predictor
 were removed.
 
@@ -362,7 +363,7 @@ removal.
 
 The other model we are interested in is a **support vector machine (SVM)** multi-classification model.
 SVMs work by trying to increase the number of dimensions so it can divide clusters of points using a plane
-in n-dimensions called a **hyperplane**.
+in n-dimensions called a **hyperplane** [@svmMultiClassification].
 
 For instance, in the example below, by transforming the points in 2D to 3D, it becomes possible
 to partition the two clusters of points using a 3D plane whereas this would not have been possible
