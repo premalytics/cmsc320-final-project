@@ -490,24 +490,27 @@ ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
 <div id="making-predictions" class="section level2">
 <h2>Making Predictions</h2>
 <p>Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a <strong>training data frame</strong>. Notice also here that we’re also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We’ve also included a graph of the PC’s and how they correspond to clustering with the k-means algorithm.</p>
-<pre class="r"><code>set.seed(1234)  
+<pre class="r"><code>set.seed(1234)
+
 # Set up training data for cluster prediction   
-training_data_ratings &lt;- user_features_df %&gt;%   
-  mutate(cluster=factor(kmeans_res$cluster)) %&gt;%    
-  sample_n(5000) #otherwise we have way too much data, can also try &lt; 10k   
-# Setting up training data for PCA anlaysis 
-training_data_pca &lt;-  as.data.frame(predict(pca_res, training_data_ratings)) %&gt;% as_tibble()    
-training_data_pca$cluster &lt;- training_data_ratings$cluster  
+training_data_ratings &lt;- user_features_df %&gt;%
+  mutate(cluster=factor(kmeans_res$cluster)) %&gt;%
+  sample_n(5000)
+
+# Setting up training data for PCA anlaysis
+training_data_pca &lt;-  as.data.frame(predict(pca_res, training_data_ratings)) %&gt;% as_tibble()
+training_data_pca$cluster &lt;- training_data_ratings$cluster
+
 training_data_ratings %&gt;%   
   head(15) %&gt;%  
-  rmarkdown::paged_table()  </code></pre>
+  rmarkdown::paged_table()</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
 {"columns":[{"label":["fantasy"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["horror"],"name":[2],"type":["dbl"],"align":["right"]},{"label":["mystery"],"name":[3],"type":["dbl"],"align":["right"]},{"label":["realistic_fiction"],"name":[4],"type":["dbl"],"align":["right"]},{"label":["romance"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["science_fiction"],"name":[6],"type":["dbl"],"align":["right"]},{"label":["thriller"],"name":[7],"type":["dbl"],"align":["right"]},{"label":["young_adult"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["cluster"],"name":[9],"type":["fctr"],"align":["left"]}],"data":[{"1":"4.000000","2":"4.200000","3":"4.137931","4":"4.090909","5":"3.956522","6":"3.833333","7":"3.772727","8":"4.068182","9":"2"},{"1":"4.346154","2":"4.583333","3":"4.258065","4":"4.375000","5":"4.114286","6":"4.388889","7":"4.200000","8":"4.357143","9":"4"},{"1":"2.542373","2":"1.750000","3":"2.866667","4":"3.023810","5":"2.710744","6":"2.555556","7":"4.000000","8":"2.764706","9":"6"},{"1":"3.250000","2":"3.208333","3":"3.277778","4":"3.210526","5":"3.470588","6":"3.263158","7":"3.355769","8":"3.531250","9":"5"},{"1":"4.294118","2":"4.000000","3":"3.954545","4":"4.090909","5":"4.026316","6":"4.200000","7":"3.823529","8":"4.388889","9":"2"},{"1":"3.611765","2":"3.611111","3":"3.478261","4":"3.266667","5":"3.238095","6":"3.606061","7":"3.350000","8":"3.512821","9":"5"},{"1":"3.923077","2":"3.666667","3":"4.102564","4":"4.215385","5":"4.146667","6":"3.736842","7":"3.800000","8":"4.115789","9":"2"},{"1":"3.642857","2":"3.375000","3":"3.620000","4":"3.517241","5":"3.230769","6":"3.500000","7":"3.589744","8":"4.066667","9":"5"},{"1":"3.400000","2":"3.333333","3":"3.148936","4":"3.279070","5":"3.283582","6":"3.416667","7":"2.892857","8":"3.333333","9":"5"},{"1":"4.392157","2":"4.080000","3":"4.159091","4":"4.333333","5":"4.166667","6":"4.421053","7":"4.148936","8":"4.375000","9":"2"},{"1":"4.323944","2":"3.857143","3":"4.432432","4":"4.066667","5":"4.509091","6":"4.300000","7":"4.426471","8":"4.555556","9":"4"},{"1":"4.075758","2":"4.000000","3":"3.861111","4":"4.000000","5":"3.894737","6":"4.100000","7":"4.111111","8":"4.000000","9":"2"},{"1":"3.419355","2":"3.437500","3":"3.433333","4":"3.700000","5":"3.357143","6":"3.418182","7":"3.378788","8":"3.400000","9":"5"},{"1":"2.428571","2":"3.000000","3":"2.571429","4":"3.250000","5":"3.066667","6":"2.000000","7":"3.000000","8":"2.904762","9":"6"},{"1":"4.543478","2":"4.666667","3":"4.516667","4":"4.608696","5":"4.189189","6":"4.516129","7":"4.509091","8":"4.487179","9":"4"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-<pre class="r"><code>training_data_pca %&gt;%   
-  head(15) %&gt;%  
+<pre class="r"><code>training_data_pca %&gt;%
+  head(15) %&gt;%
   rmarkdown::paged_table()</code></pre>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
@@ -516,7 +519,7 @@ training_data_ratings %&gt;%
 </div>
 <div id="random-forests" class="section level3">
 <h3>Random Forests</h3>
-<p>Now that we’ve generated our training data set, we can begin training our own machine learning (ML) model. First, we’ll take a look at a very popular tree-based model known as <a href="https://towardsdatascience.com/understanding-random-forest-58381e0602d2"><strong>random forest</strong></a>. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.</p>
+<p>Now that we’ve generated our training data set, we can begin training our own machine learning (ML) model. First, we’ll take a look at a popular tree-based model known as a <a href="https://towardsdatascience.com/understanding-random-forest-58381e0602d2"><strong>random forest</strong></a>. In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.</p>
 <pre class="r"><code># Training classification on dataframe using randomForest (n = 200):    
 rf_prediction &lt;- randomForest(cluster ~ .,  
                               ntree=200,    
@@ -588,7 +591,9 @@ plot(svm_prediction, train_svm, realistic_fiction ~ horror,
           slice=list(fantasy = 3, mystery = 3, young_adult = 3, romance = 3, science_fiction = 3, thriller = 3))</code></pre>
 <p><img src="index_files/figure-html/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>From the plot above, we keep the predictors for all the other predictors constant (at rating = 3), and are now taking a look at how SVM is plotting a hyperplane between clusters for the two ratings: realistic_fiction and horror. The color gradients in the plot correspond to the clusters our SVM model predicts, and from here you can see the support vectors (the points on the plot) and the margins between the respective clusters.</p>
-<p>Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set and plotting a confusion matrix:</p>
+</div>
+<div id="comparing-models" class="section level3">
+<h3>Comparing Models</h3>
 <pre class="r"><code>pred_svm &lt;- predict(svm_prediction, test_svm)
 
 table(test_svm$cluster, pred_svm)</code></pre>
@@ -609,110 +614,12 @@ table(test_svm$cluster, pred_svm)</code></pre>
 ##   4 0.000000000 0.004081633 0.000000000 0.995918367 0.000000000 0.000000000
 ##   5 0.000000000 0.002222222 0.000000000 0.000000000 0.991111111 0.006666667
 ##   6 0.000000000 0.000000000 0.000000000 0.000000000 0.012048193 0.987951807</code></pre>
-<p>From the above, we see interestingly that our model performed moderately well. While there were some misclassifications, for the most part the SVM model performed with &gt;90% accuracy in classifying each of the 6 clusters. Now we can generate a more formal confusion matrix like so:</p>
-<p><strong>TODO: Implement CV folding w/ confusion matrix?</strong></p>
-<pre class="r"><code>library(caret)
-confusionMatrix(pred_svm, test_svm$cluster)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
-## Prediction   1   2   3   4   5   6
-##          1  20   0   0   0   0   0
-##          2   0 439   0   1   1   0
-##          3   0   0  11   0   0   0
-##          4   0   0   0 244   0   0
-##          5   0   1   0   0 446   1
-##          6   0   0   1   0   3  82
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.9936          
-##                  95% CI : (0.9874, 0.9972)
-##     No Information Rate : 0.36            
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.9909          
-##                                           
-##  Mcnemar&#39;s Test P-Value : NA              
-## 
-## Statistics by Class:
-## 
-##                      Class: 1 Class: 2 Class: 3 Class: 4 Class: 5 Class: 6
-## Sensitivity             1.000   0.9977   0.9167   0.9959   0.9911   0.9880
-## Specificity             1.000   0.9975   1.0000   1.0000   0.9975   0.9966
-## Pos Pred Value          1.000   0.9955   1.0000   1.0000   0.9955   0.9535
-## Neg Pred Value          1.000   0.9988   0.9992   0.9990   0.9950   0.9991
-## Prevalence              0.016   0.3520   0.0096   0.1960   0.3600   0.0664
-## Detection Rate          0.016   0.3512   0.0088   0.1952   0.3568   0.0656
-## Detection Prevalence    0.016   0.3528   0.0088   0.1952   0.3584   0.0688
-## Balanced Accuracy       1.000   0.9976   0.9583   0.9980   0.9943   0.9923</code></pre>
-<p>Notice the our output, we call this the “confusion matrix”, and it is simply a measure of accuracy and how many correctly classified objects were counted (notice also that the table generated is pretty much exactly similar to the previous table we self-generated). For our model, we created the confusion matrix using the testing data set from the previous 25% of the remaining calssification data.</p>
-</div>
-<div id="evaluating-model-performance" class="section level3">
-<h3>Evaluating Model Performance</h3>
-<p>From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now, let’s analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how well our model fits the dataset. For the next section, we’ll be analyzing our random forest model on the raw training data set, and comparing that to our PCA-created data set and see the differences in performance. To do this, we’ve first introduced <strong>5-fold cross validation</strong>, a model evaluation technique where we basically divide up our training set into distinct pieces, sample each piece and them compare results to get an idea of the accuracy. In addition, we will also compare prediction accuracies for each model based off of the testing data set.</p>
-<p><strong>TODO: Add confusion matrix/ROC curves</strong></p>
-<pre class="r"><code>set.seed(1234)
-
-# setup training parameters
-fit_control &lt;- trainControl( ## 5-fold CV
-  method = &quot;cv&quot;,
-  number = 5)
-
-evaluate_model &lt;- function(training_data) {
-  # We use 5-fold Cross Validation as our experiment to determine the accuracy of our random_forest model:
-  # create the cross-validation partition
-  cv_partition &lt;- createFolds(training_data$cluster, k=5)
-
-  # iterate over folds for normal random forest data:
-  rf_res &lt;- sapply(seq_along(cv_partition),  function(i) {
-    # train the random forest using train() instead of randomForest, 200 trees
-    fit &lt;- train(cluster ~ .,
-                 data = training_data[-cv_partition[[i]],], # all but the holdout set
-                 method = &quot;rf&quot;,
-                 ntree = 200,
-                 trControl = fit_control)
-    
-    # make predictions on the holdout set
-    preds &lt;- predict(fit, training_data[cv_partition[[i]],])
-      
-    sum(preds == training_data$cluster[cv_partition[[i]]]) / length(preds) # output percentage correctly identified for now
-    
-    # compute tpr and fpr from the hold out set
-    #perf &lt;- ROCR::prediction(preds, training_data$cluster[cv_partition[[i]]]) %&gt;%
-    #  ROCR::performance(measure=&quot;tpr&quot;, x.measure=&quot;fpr&quot;)
-  
-    #fpr &lt;- unlist(perf@x.values)
-    #tpr &lt;- unlist(perf@y.values)
-      
-    # interpolate the roc curve over 0, 1 range
-    #interp_tpr &lt;- approxfun(fpr, tpr)(mean_fpr)
-    #interp_tpr[1] &lt;- 0.0
-      
-    # collect values for this fold
-    #data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
-  })
-  
-  # combine values across all folds for normal random forest data
-  # into a single data frame
-  #rf_normal_curve_df &lt;- do.call(rbind, rf_res_normal)
-  
-  # get AUC results:
-  #rf_normal_auc_df &lt;- rf_normal_curve_df %&gt;% group_by(fold) %&gt;%
-  #  summarize(auc=pracma::trapz(fpr, tpr))
-  
-  rf_res
-}
-
-rf_ratings_res &lt;- evaluate_model(training_data_ratings)
-rf_pca_res &lt;- evaluate_model(training_data_pca)</code></pre>
-<p>Now that we’ve conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we’ve graphed below:</p>
-<p><strong>TODO: Write up + Explain more about AUC/ROC</strong></p>
-<p><strong>TODO: Write up results for ROC Curves graph</strong></p>
 </div>
 </div>
 <div id="results-and-discussion" class="section level2">
 <h2>Results and Discussion</h2>
+<div id="clustering" class="section level3">
+<h3>Clustering</h3>
 <p>Let’s try to qualitatively summarize our clusters:</p>
 <ol style="list-style-type: decimal">
 <li>Rates average 4 in all genres but doesn’t read realistic fiction</li>
@@ -727,14 +634,18 @@ rf_pca_res &lt;- evaluate_model(training_data_pca)</code></pre>
 <p>Observing group 6, both its large variation and slight intersection into group 5 seem to indicate that while the average ratings are around 3, there are probably a substantial amount of users within the group that rate very low, dragging the averages down.</p>
 <p>Group 3 is also an interesting case. The cluster has large variation and a somewhat specific qualitative description. Moreover, informal observation of the cluster graph seems to show smaller clusters within this group as well. This seems to indicate that while the users in this group generally have the qualitative characteristics as described above in common, there are still sub-groups within this cluster that have varying defining characteristics from each other.</p>
 <p>Group 1 is another cluster with a specific qualitative description. The variation within this cluster is somewhat high and the cluster is located far away from other the other groups. This seems to indicate that there truly is a common group of readers that do not read realistic fiction, but they also likely vary in their average ratings across other genres.</p>
-<p><strong>TODO: Add more on predictions</strong></p>
-<p>Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that interestingly, the most “important” predictors for classification seemed to be realistic_fiction and horror genre ratings.</p>
+</div>
+<div id="predictions" class="section level3">
+<h3>Predictions</h3>
+<p>Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that the most “important” predictors for classification seemed to be realistic_fiction and horror genre ratings. This result makes sense when considering how our clusters are separated. While most of the K-means clusters we generated seemed to depends less upon average user ratings for specific genres than their average ratings across all genres, cluster 1 seems to made up of users that don’t read or review realistic fiction books and cluster 3 seems to be made up of users that dislike science fiction and don’t review horror books. Those extra genre conditions, realistic fiction, science fiction, and horror correspond with with 3 of the top 4 most important predictors according to our random forest model.</p>
 <p><strong>TODO: Add more on SVM</strong></p>
 <p>Using our Support Vector Machine model, we achieved very interesting accuracy with our testing data set. Overall, it suggests that perhaps SVM is a good model/fit for the classification problem.</p>
-<p><strong>TODO: Write up ROC, AUROC</strong></p>
+</div>
+<div id="areas-of-improvement" class="section level3">
+<h3>Areas of Improvement</h3>
 <p>While we were able to successfully cluster users in this project, there are still several potential areas for improvement. One issue was that by only working with the average genre ratings for each user, we lost information about the variance of ratings within each genre per user. This means that certain users may have ended up in the same cluster because they had similar average ratings but still rate books differently in reality because the variation in how they rate was not accounted for.</p>
 <p>Another area that could have been improved was our clustering algorithm. K-means clustering was not able to find some of the smaller clusters in group 6, possibly due to a large amount of users in other locations which ended up occupying the algorithm. Since there were more data points densely packed in the area near groups 2 and 5, the centroids for K-means ended up gathering near there and ignoring smaller clusters elsewhere.</p>
-<p><strong>TODO: Talk more on improvements</strong></p>
+</div>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>

@@ -285,29 +285,32 @@ ggplot(plot_data, aes(PC1, PC2, color=cluster)) +
 
 ## Making Predictions
 
-Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.	
-
+Here in this section we talk about prediction analysis using R, specifically with regards to basic machine learning. In the following code chunk, we take our previous results from k-means clustering, and then append them to our previous dataframe in order to augment it into a **training data frame**. Notice also here that we're also generating the individual Principal Components used in PCA before. The intent here is that we can select a subset of the most important (cover the most variability) Principal Components and use those in other prediction methods. We've also included a graph of the PC's and how they correspond to clustering with the k-means algorithm.
 
 ```{r}
-set.seed(1234)	
+set.seed(1234)
+
 # Set up training data for cluster prediction	
-training_data_ratings <- user_features_df %>%	
-  mutate(cluster=factor(kmeans_res$cluster)) %>%	
-  sample_n(5000) #otherwise we have way too much data, can also try < 10k	
-# Setting up training data for PCA anlaysis	
-training_data_pca <-  as.data.frame(predict(pca_res, training_data_ratings)) %>% as_tibble()	
-training_data_pca$cluster <- training_data_ratings$cluster	
+training_data_ratings <- user_features_df %>%
+  mutate(cluster=factor(kmeans_res$cluster)) %>%
+  sample_n(5000)
+
+# Setting up training data for PCA anlaysis
+training_data_pca <-  as.data.frame(predict(pca_res, training_data_ratings)) %>% as_tibble()
+training_data_pca$cluster <- training_data_ratings$cluster
+
 training_data_ratings %>%	
   head(15) %>%	
-  rmarkdown::paged_table()	
-training_data_pca %>%	
-  head(15) %>%	
+  rmarkdown::paged_table()
+
+training_data_pca %>%
+  head(15) %>%
   rmarkdown::paged_table()
 ```
 
 ### Random Forests	
 
-Now that we've generated our training data set, we can begin training our own machine learning (ML) model. First, we'll take a look at a very popular tree-based model known as [**random forest**](https://towardsdatascience.com/understanding-random-forest-58381e0602d2). In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
+Now that we've generated our training data set, we can begin training our own machine learning (ML) model. First, we'll take a look at a popular tree-based model known as a [**random forest**](https://towardsdatascience.com/understanding-random-forest-58381e0602d2). In a regular decision tree, the idea is to break the classification problem of ML up into multiple partitions first, and this forms the basis of the actual tree. With random forests, we take this a step further by creating multiple, random decision trees and then averaging the results from each of them for the classification problem. This improves prediction and also reduces instability from just singular decision trees.
 
 ```{r}	
 # Training classification on dataframe using randomForest (n = 200):	
@@ -383,8 +386,7 @@ plot(svm_prediction, train_svm, realistic_fiction ~ horror,
 
 From the plot above, we keep the predictors for all the other predictors constant (at rating = 3), and are now taking a look at how SVM is plotting a hyperplane between clusters for the two ratings: realistic_fiction and horror. The color gradients in the plot correspond to the clusters our SVM model predicts, and from here you can see the support vectors (the points on the plot) and the margins between the respective clusters. 
 
-Next we can actually measure our accuracy for the SVM model by using it to predict results for our testing data set and plotting a confusion matrix:
-
+### Comparing Models
 
 ```{r}
 pred_svm <- predict(svm_prediction, test_svm)
@@ -393,93 +395,9 @@ table(test_svm$cluster, pred_svm)
 prop.table(table(test_svm$cluster, pred_svm), 1)
 ```
 
-From the above, we see interestingly that our model performed moderately well. While there were some misclassifications, for the most part the SVM model performed with >90% accuracy in classifying each of the 6 clusters. Now we can generate a more formal confusion matrix like so:
-
-**TODO: Implement CV folding w/ confusion matrix?**
-
-```{r}
-library(caret)
-confusionMatrix(pred_svm, test_svm$cluster)
-```
-Notice the our output, we call this the "confusion matrix", and it is simply a measure of accuracy and how many correctly classified objects were counted (notice also that the table generated is pretty much exactly similar to the previous table we self-generated). For our model, we created the confusion matrix using the testing data set from the previous 25% of the remaining calssification data.
-
-### Evaluating Model Performance
-
-From the above, we see that random forest determined/calculated the importance of each of the genre ratings as predictors for the
-cluster group. From the barplot, it seems that fantasy, mystery and young_adult were one of the most important predictors. Now,
-let's analyze the accuracy of our randomForest model by generating ROC curves, which can give us a measure of just how accurate/how
-well our model fits the dataset. For the next section, we'll be analyzing our random forest model on the raw training data set,
-and comparing that to our PCA-created data set and see the differences in performance. To do this, we've first introduced **5-fold cross validation**, a model evaluation technique where we basically divide up our training set into distinct pieces, sample each piece and them compare results to get an idea of the accuracy. In addition, we will also compare prediction accuracies for each model based off of the testing data set. 
-
-**TODO: Add confusion matrix/ROC curves**
-
-```{r, eval=FALSE}
-set.seed(1234)
-
-# setup training parameters
-fit_control <- trainControl( ## 5-fold CV
-  method = "cv",
-  number = 5)
-
-evaluate_model <- function(training_data) {
-  # We use 5-fold Cross Validation as our experiment to determine the accuracy of our random_forest model:
-  # create the cross-validation partition
-  cv_partition <- createFolds(training_data$cluster, k=5)
-
-  # iterate over folds for normal random forest data:
-  rf_res <- sapply(seq_along(cv_partition),  function(i) {
-    # train the random forest using train() instead of randomForest, 200 trees
-    fit <- train(cluster ~ .,
-                 data = training_data[-cv_partition[[i]],], # all but the holdout set
-                 method = "rf",
-                 ntree = 200,
-                 trControl = fit_control)
-    
-    # make predictions on the holdout set
-    preds <- predict(fit, training_data[cv_partition[[i]],])
-      
-    sum(preds == training_data$cluster[cv_partition[[i]]]) / length(preds) # output percentage correctly identified for now
-    
-    # compute tpr and fpr from the hold out set
-    #perf <- ROCR::prediction(preds, training_data$cluster[cv_partition[[i]]]) %>%
-    #  ROCR::performance(measure="tpr", x.measure="fpr")
-  
-    #fpr <- unlist(perf@x.values)
-    #tpr <- unlist(perf@y.values)
-      
-    # interpolate the roc curve over 0, 1 range
-    #interp_tpr <- approxfun(fpr, tpr)(mean_fpr)
-    #interp_tpr[1] <- 0.0
-      
-    # collect values for this fold
-    #data_frame(fold=rep(i, length(mean_fpr)), fpr=mean_fpr, tpr=interp_tpr)
-  })
-  
-  # combine values across all folds for normal random forest data
-  # into a single data frame
-  #rf_normal_curve_df <- do.call(rbind, rf_res_normal)
-  
-  # get AUC results:
-  #rf_normal_auc_df <- rf_normal_curve_df %>% group_by(fold) %>%
-  #  summarize(auc=pracma::trapz(fpr, tpr))
-  
-  rf_res
-}
-
-rf_ratings_res <- evaluate_model(training_data_ratings)
-rf_pca_res <- evaluate_model(training_data_pca)
-```
-
-
-Now that we've conducted our experiment, we can talk about the specific methods of model evaluation including: Area Under Curve (AUC) and ROC which we've graphed below:
-
-**TODO: Write up + Explain more about AUC/ROC**
-
-
-**TODO: Write up results for ROC Curves graph**
-
-
 ## Results and Discussion
+
+### Clustering
 
 Let's try to qualitatively summarize our clusters:
 
@@ -518,13 +436,15 @@ other the other groups. This seems to indicate that there truly is a common grou
 of readers that do not read realistic fiction, but they also likely vary in their average
 ratings across other genres.
 
+### Predictions
+
 Looking at our predictions, we got some very interesting results. By training our Random Forest model, we were able to show on the regular dataset that the most "important" predictors for classification seemed to be realistic_fiction and horror genre ratings. This result makes sense when considering how our clusters are separated. While most of the K-means clusters we generated seemed to depends less upon average user ratings for specific genres than their average ratings across all genres, cluster 1 seems to made up of users that don't read or review realistic fiction books and cluster 3 seems to be made up of users that dislike science fiction and don't review horror books. Those extra genre conditions, realistic fiction, science fiction, and horror correspond with with 3 of the top 4 most important predictors according to our random forest model.
 
 **TODO: Add more on SVM**
 
 Using our Support Vector Machine model, we achieved very interesting accuracy with our testing data set. Overall, it suggests that perhaps SVM is a good model/fit for the classification problem.
 
-**TODO: Write up ROC, AUROC**
+### Areas of Improvement
 
 While we were able to successfully cluster users in this project, there
 are still several potential areas for improvement. One issue was that by only
@@ -538,8 +458,6 @@ K-means clustering was not able to find some of the smaller clusters in group 6,
 possibly due to a large amount of users in other locations which ended up occupying the algorithm.
 Since there were more data points densely packed in the area near groups 2 and 5, the centroids
 for K-means ended up gathering near there and ignoring smaller clusters elsewhere.
-
-**TODO: Talk more on improvements**
 
 ## Conclusion
 
